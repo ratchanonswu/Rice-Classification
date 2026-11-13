@@ -1,0 +1,17 @@
+{
+  "model_architecture": "EfficientNetV2-S",
+  "total_parameters": 20660838,
+  "trainable_parameters": 329478,
+  "model_file_path": "finals/models/efficientnetv2s.keras",
+  "model_file_size_bytes": 87076030,
+  "model_file_size_mb": 83.04,
+  "training_time_seconds": 1807.8,
+  "training_time_minutes": 30.13,
+  "inference_latency": {
+    "profiled_samples": 50,
+    "average_inference_time_ms": 77.78,
+    "median_inference_time_ms": 77.78,
+    "std_inference_time_ms": 5.2,
+    "throughput_fps": 12.9
+  }
+}

@@ -1,0 +1,20 @@
+# Environments and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Frontend dependencies and local configs
+node_modules/
+.env
+.env.local
+.env.*.local
+
+# System & IDE files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

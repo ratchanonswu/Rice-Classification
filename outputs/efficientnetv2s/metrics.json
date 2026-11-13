@@ -1,0 +1,13 @@
+{
+  "model": "efficientnetv2s",
+  "test_sample_count": 570,
+  "accuracy": 0.9281,
+  "precision_macro": 0.9281,
+  "precision_weighted": 0.9283,
+  "recall_macro": 0.9276,
+  "recall_weighted": 0.9281,
+  "f1_score_macro": 0.9274,
+  "f1_score_weighted": 0.9278,
+  "roc_auc_macro": 0.9924,
+  "roc_auc_weighted": 0.9924
+}

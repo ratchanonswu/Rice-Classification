@@ -1,0 +1,210 @@
+import { type ElementType, type ReactNode } from 'react';
+import { SectionHeader } from '../components/UI';
+import { Database, Filter, Layers, FlaskConical, Sparkles } from 'lucide-react';
+
+interface Step {
+  icon: ElementType;
+  title: string;
+  badge?: string;
+  badgeColor?: 'green' | 'blue' | 'orange' | 'slate';
+  content: ReactNode;
+}
+
+const steps: Step[] = [
+  {
+    icon: Database,
+    title: 'Dataset Collection & Standardization',
+    badge: '3,829 images',
+    badgeColor: 'slate',
+    content: (
+      <div className="space-y-2 text-sm text-slate-600 leading-relaxed">
+        <p>
+          The dataset comprises 3,829 high-resolution images of rice leaves across six pathological categories:
+          Bacterial Leaf Blight, Brown Spot, Healthy Rice Leaf, Leaf Blast, Leaf Scald, and Sheath Blight.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+          {[
+            ['Bacterial Leaf Blight', '630 images'],
+            ['Brown Spot', '570 images'],
+            ['Healthy Rice Leaf', '700 images'],
+            ['Leaf Blast', '630 images'],
+            ['Leaf Scald', '640 images'],
+            ['Sheath Blight', '659 images'],
+          ].map(([cls, count]) => (
+            <div key={cls} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              <p className="text-xs font-semibold text-slate-700">{cls}</p>
+              <p className="text-[11px] text-slate-400">{count}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: Filter,
+    title: 'Audit & Leakage-Free Splitting',
+    badge: 'Zero Overlap',
+    badgeColor: 'orange',
+    content: (
+      <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+        <p>
+          An automated deduplication pipeline identified duplicate groups using MD5 and perceptual hashing (pHash).
+          Exact duplicate clusters were isolated so no identical leaf specimen could leak across train, validation,
+          and test splits.
+        </p>
+        <ul className="space-y-1.5 list-disc list-inside text-xs text-slate-500">
+          <li>31 duplicate clusters grouped; canonical single instances preserved</li>
+          <li>Group-stratified splitting: 70% train (2,658), 15% validation (570), 15% test (570)</li>
+          <li>All splits audited for class distribution balance and group segregation</li>
+        </ul>
+      </div>
+    ),
+  },
+  {
+    icon: Layers,
+    title: 'Model Architectures: Light vs. Deep',
+    badge: 'Comparative Study',
+    badgeColor: 'blue',
+    content: (
+      <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+        <p>
+          We benchmarked two complementary modern architectures: a lightweight mobile backbone
+          (<strong>EfficientNetV2-S</strong>) versus a large-capacity transformer-inspired convolutional network
+          (<strong>ConvNeXtBase</strong>).
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-green-50/50 border border-green-200 rounded-2xl p-4 space-y-2">
+            <h4 className="font-bold text-green-900 text-sm">EfficientNetV2-S (Lightweight Champion)</h4>
+            <ul className="space-y-1 text-xs text-slate-600">
+              <li>• <strong>20.66M</strong> total parameters</li>
+              <li>• <strong>83.04 MB</strong> model checkpoint</li>
+              <li>• Fused-MBConv layers with progressive learning</li>
+              <li>• Native Keras internal normalization layers</li>
+              <li>• GlobalAveragePooling2D → Dense(6) Softmax</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-4 space-y-2">
+            <h4 className="font-bold text-blue-900 text-sm">ConvNeXtBase (Modern ConvNet)</h4>
+            <ul className="space-y-1 text-xs text-slate-600">
+              <li>• <strong>87.83M</strong> total parameters</li>
+              <li>• <strong>338.0 MB</strong> model checkpoint</li>
+              <li>• 7x7 depthwise convolutions inspired by Swin Transformers</li>
+              <li>• LayerNorm and inverted bottleneck design</li>
+              <li>• GlobalAveragePooling2D → Dense(6) Softmax</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: Sparkles,
+    title: 'Explainable AI: Head-Propagation Grad-CAM',
+    badge: 'Visual Attribution',
+    badgeColor: 'green',
+    content: (
+      <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+        <p>
+          Gradient-weighted Class Activation Mapping (Grad-CAM) generates 2D activation heatmaps highlighting
+          the salient leaf areas influencing classification decisions:
+        </p>
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2 text-slate-600">
+          <p>
+            <strong>Head-Propagation Tape:</strong> We watch feature activations coming out of the backbone convolutional
+            stage and propagate them through the classification head layers within a <code>tf.GradientTape</code>.
+          </p>
+          <p>
+            <strong>Channel Weighting:</strong> Gradients of the predicted class score with respect to feature maps
+            are globally averaged to compute channel importance weights.
+          </p>
+          <p>
+            <strong>Colormap Superimposition:</strong> Heatmaps are clipped with ReLU, min-max normalized, resized
+            to leaf image resolution, and blended via OpenCV <code>COLORMAP_JET</code> at $\alpha=0.45$.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: FlaskConical,
+    title: 'Empirical Results & Test Evaluation',
+    badge: '570 Test Images',
+    badgeColor: 'green',
+    content: (
+      <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+        <p>
+          Final model checkpoints were evaluated on the 570 unseen test samples. EfficientNetV2-S demonstrated
+          superior generalization with higher accuracy and F1 scores while consuming 4.1× less storage.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border border-slate-200 rounded-xl overflow-hidden">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="text-left px-3 py-2 text-slate-600 font-semibold">Metric</th>
+                <th className="text-right px-3 py-2 text-green-700 font-bold">EfficientNetV2-S</th>
+                <th className="text-right px-3 py-2 text-blue-700 font-bold">ConvNeXtBase</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {[
+                ['Test Accuracy', '92.81%', '90.18%'],
+                ['Macro Precision', '92.81%', '90.37%'],
+                ['Macro Recall', '92.76%', '90.12%'],
+                ['Macro F1 Score', '92.74%', '90.17%'],
+                ['ROC-AUC (OvR)', '0.9924', '0.9892'],
+                ['Total Parameters', '20.66 M', '87.83 M'],
+                ['Model File Size', '83.04 MB', '338.0 MB'],
+                ['Training Time', '30.13 min', '42.37 min'],
+              ].map(([k, eff, conv], i) => (
+                <tr key={k} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                  <td className="px-3 py-2 text-slate-700 font-medium">{k}</td>
+                  <td className="px-3 py-2 text-right text-green-700 font-bold">{eff}</td>
+                  <td className="px-3 py-2 text-right text-blue-700 font-medium">{conv}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ),
+  },
+];
+
+export default function Methodology() {
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      <SectionHeader
+        title="Research Methodology & Explainable AI Pipeline"
+        subtitle="End-to-end experimental protocol from data audit to dual-model Grad-CAM feature visualization"
+      />
+
+      <div className="space-y-6">
+        {steps.map((step, idx) => {
+          const Icon = step.icon;
+          return (
+            <div key={step.title} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-green-50 text-green-800 flex items-center justify-center font-bold">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-base">
+                      {idx + 1}. {step.title}
+                    </h3>
+                  </div>
+                </div>
+                {step.badge && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                    {step.badge}
+                  </span>
+                )}
+              </div>
+              {step.content}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
