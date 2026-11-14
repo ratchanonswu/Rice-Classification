@@ -18,3 +18,11 @@ node_modules/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Model files — stored on HuggingFace Hub, not in Git
+models/*.keras
+models/*.h5
+models/*.pb
+
+# Dataset (too large for Git)
+dataset/
