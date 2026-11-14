@@ -2,13 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { predictImage, fetchClasses, fetchSampleResults } from '../api';
+import { fetchClasses, fetchSampleResults } from '../api';
 import type { PredictResponse, SinglePredictionResult, ClassInfo } from '../types';
 import { SectionHeader, ErrorBanner } from '../components/UI';
 import {
   Upload, ImageIcon, Loader2, AlertTriangle, CheckCircle, X,
   Layers, Sparkles, ShieldAlert,
-  Info, Eye, Sliders
+  Info, Eye, Sliders, ExternalLink
 } from 'lucide-react';
 
 type ModelSelection = 'both' | 'efficientnetv2s' | 'convnextbase';
@@ -58,6 +58,7 @@ export default function Predict() {
 
   // Pre-computed sample results (both models) — loaded once at mount
   const [sampleResults, setSampleResults] = useState<Record<string, PredictResponse>>({});
+  const [showColabNotice, setShowColabNotice] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -98,22 +99,14 @@ export default function Predict() {
     setPreview(null);
     setResult(null);
     setError(null);
+    setShowColabNotice(false);
     if (inputRef.current) inputRef.current.value = '';
   };
 
   const handlePredict = async () => {
     if (!file) return;
-    setLoading(true);
-    setError(null);
+    setShowColabNotice(true);
     setResult(null);
-    try {
-      const res = await predictImage(file, model);
-      setResult(res);
-    } catch (e: any) {
-      setError(e.message || 'Prediction failed');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const loadSampleImage = async (cls: ClassInfo) => {
@@ -126,6 +119,7 @@ export default function Predict() {
       const blob = await res.blob();
       const sampleFile = new File([blob], `${cls.name.toLowerCase().replace(/\s+/g, '_')}_sample.jpg`, { type: 'image/jpeg' });
       handleFile(sampleFile);
+      setShowColabNotice(false);
 
       // Show pre-computed result instantly (both models) — no model run needed
       if (sampleResults[cls.name]) {
@@ -244,6 +238,34 @@ export default function Predict() {
             />
 
             {error && <ErrorBanner message={error} />}
+
+            {showColabNotice && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-bold text-sm text-amber-900">
+                      การประมวลผลโมเดลสดถูกจำกัดบนเว็บสาธิต (Free Cloud Limit)
+                    </h5>
+                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                      เนื่องจากทั้ง 2 โมเดล (รวมกันกว่า 421 MB) และการคำนวณ Grad-CAM ใช้หน่วยความจำ (RAM) สูงเกินขีดจำกัดของ Free Cloud Hosting ระบบจึงแสดงผลการสาธิตผ่าน <strong>1-Click Sample Images</strong> ด้านล่าง
+                    </p>
+                    <p className="text-xs text-amber-800 mt-1.5 leading-relaxed">
+                      หากท่านต้องการอัปโหลดรูปภาพใหม่เพื่อทดสอบการทำนายสดด้วยตนเอง สามารถรันโค้ดและโมเดลฉบับเต็มบน Google Colab (GPU ฟรี) ได้ที่ลิงก์ด้านล่างนี้:
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="https://colab.research.google.com/drive/197JoUaecxXV8inLMMK1PQWrZhoENJEOn?usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  เปิดทดสอบการทำนายบน Google Colab
+                </a>
+              </div>
+            )}
 
             {/* Predict Button */}
             <button
