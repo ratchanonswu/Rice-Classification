@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { fetchClasses, fetchSampleResults } from '../api';
+import { predictImage, fetchClasses, fetchSampleResults } from '../api';
 import type { PredictResponse, SinglePredictionResult, ClassInfo } from '../types';
 import { SectionHeader, ErrorBanner } from '../components/UI';
 import {
@@ -105,8 +105,27 @@ export default function Predict() {
 
   const handlePredict = async () => {
     if (!file) return;
-    setShowColabNotice(true);
+
+    // On local machine (localhost / 127.0.0.1), run inference normally using local models
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalhost) {
+      setShowColabNotice(true);
+      setResult(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
     setResult(null);
+    setShowColabNotice(false);
+    try {
+      const res = await predictImage(file, model);
+      setResult(res);
+    } catch (e: any) {
+      setError(e.message || 'Prediction failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadSampleImage = async (cls: ClassInfo) => {
