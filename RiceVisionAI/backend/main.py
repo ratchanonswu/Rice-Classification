@@ -55,6 +55,9 @@ CLASS_NAMES = [
     "Sheath Blight",
 ]
 
+# When set, only this model is loaded (e.g. "efficientnetv2s" on memory-limited deployments)
+SINGLE_MODEL = os.getenv("SINGLE_MODEL", "")
+
 # ─── App Initialization ──────────────────────────────────────────────────────
 
 app = FastAPI(
@@ -463,6 +466,16 @@ def get_metrics():
     }
 
 
+@app.get("/api/sample-results")
+def get_sample_results():
+    """Return pre-computed predictions (both models) for the 6 sample class images."""
+    path = OUTPUTS_DIR / "sample_results.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Sample results not generated yet. Run generate_sample_results.py locally.")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 @app.post("/api/predict")
 async def predict(
     file: UploadFile = File(...),
@@ -474,6 +487,13 @@ async def predict(
     """
     if model not in ("both", "efficientnetv2s", "convnextbase"):
         raise HTTPException(status_code=400, detail="model must be 'both', 'efficientnetv2s', or 'convnextbase'")
+
+    # In single-model deployments, redirect "both" to the available model
+    if SINGLE_MODEL:
+        if model == "both" or model == SINGLE_MODEL:
+            model = SINGLE_MODEL
+        else:
+            raise HTTPException(status_code=400, detail=f"Only '{SINGLE_MODEL}' is available in this deployment.")
 
     # Validate file type
     if file.content_type not in ("image/jpeg", "image/jpg", "image/png"):

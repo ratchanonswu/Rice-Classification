@@ -25,6 +25,12 @@ export async function fetchMetrics() {
   return res.json();
 }
 
+export async function fetchSampleResults(): Promise<Record<string, any>> {
+  const res = await fetch(`${BASE}/sample-results`);
+  if (!res.ok) throw new Error('Sample results unavailable');
+  return res.json();
+}
+
 export async function predictImage(file: File, model: string = 'both') {
   const formData = new FormData();
   formData.append('file', file);
@@ -38,3 +44,4 @@ export async function predictImage(file: File, model: string = 'both') {
   }
   return res.json();
 }
+

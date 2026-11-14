@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { predictImage, fetchClasses } from '../api';
+import { predictImage, fetchClasses, fetchSampleResults } from '../api';
 import type { PredictResponse, SinglePredictionResult, ClassInfo } from '../types';
 import { SectionHeader, ErrorBanner } from '../components/UI';
 import {
@@ -56,10 +56,14 @@ export default function Predict() {
   const [viewMode, setViewMode] = useState<'overlay' | 'raw' | 'original'>('overlay');
   const [opacity, setOpacity] = useState<number>(0.65);
 
+  // Pre-computed sample results (both models) — loaded once at mount
+  const [sampleResults, setSampleResults] = useState<Record<string, PredictResponse>>({});
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchClasses().then(setClasses).catch(() => {});
+    fetchSampleResults().then(setSampleResults).catch(() => {});
   }, []);
 
   const handleFile = useCallback((f: File) => {
@@ -120,8 +124,13 @@ export default function Predict() {
       setResult(null);
       const res = await fetch(cls.image);
       const blob = await res.blob();
-      const sampleFile = new File([blob], `${cls.name.toLowerCase().replace(/\\s+/g, '_')}_sample.jpg`, { type: 'image/jpeg' });
+      const sampleFile = new File([blob], `${cls.name.toLowerCase().replace(/\s+/g, '_')}_sample.jpg`, { type: 'image/jpeg' });
       handleFile(sampleFile);
+
+      // Show pre-computed result instantly (both models) — no model run needed
+      if (sampleResults[cls.name]) {
+        setResult(sampleResults[cls.name]);
+      }
     } catch (err) {
       setError('Could not load sample image');
     } finally {
@@ -277,6 +286,11 @@ export default function Predict() {
                       <img src={c.image} alt={c.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No img</div>
+                    )}
+                    {sampleResults[c.name] && (
+                      <span className="absolute top-1 right-1 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                        DEMO
+                      </span>
                     )}
                   </div>
                   <span className="text-[11px] font-medium text-slate-700 text-center line-clamp-1 leading-tight">
