@@ -14,7 +14,7 @@ from pathlib import Path
 from huggingface_hub import HfApi, create_repo
 
 # ── CHANGE THESE ──────────────────────────────────────────────────────────────
-HF_USERNAME = "YOUR_HF_USERNAME"           # your HuggingFace username
+HF_USERNAME = "ratchanonswu"           # your HuggingFace username
 REPO_NAME   = "rice-vision-models"         # repo will be created if it doesn't exist
 # ─────────────────────────────────────────────────────────────────────────────
 
