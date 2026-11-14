@@ -28,21 +28,23 @@ from fastapi.staticfiles import StaticFiles
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent.parent.parent  # c:\Gitwork\Rice diseases
 
-FINALS_DIR = BACKEND_DIR.parent.parent
-if not (FINALS_DIR / "models").exists():
+# Allow env-var overrides for containerised / cloud deployments
+# (HuggingFace Spaces, Docker, Render, Railway, …)
+_default_finals = BACKEND_DIR.parent.parent
+if not (_default_finals / "models").exists():
     if (PROJECT_ROOT / "finals").exists():
-        FINALS_DIR = PROJECT_ROOT / "finals"
+        _default_finals = PROJECT_ROOT / "finals"
     elif (PROJECT_ROOT / "FinalVersion").exists():
-        FINALS_DIR = PROJECT_ROOT / "FinalVersion"
+        _default_finals = PROJECT_ROOT / "FinalVersion"
 
-MODELS_DIR = FINALS_DIR / "models"
-OUTPUTS_DIR = FINALS_DIR / "outputs"
+MODELS_DIR   = Path(os.getenv("MODELS_DIR",   str(_default_finals / "models")))
+OUTPUTS_DIR  = Path(os.getenv("OUTPUTS_DIR",  str(_default_finals / "outputs")))
+FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", str(BACKEND_DIR.parent / "frontend" / "dist")))
 
 DATASET_DIR = PROJECT_ROOT / "Rice Diseases Classification" / "ResNet50" / "dataset"
-FRONTEND_DIST = BACKEND_DIR.parent / "frontend" / "dist"
 
 EFFIENTNET_CHECKPOINT = MODELS_DIR / "efficientnetv2s.keras"
-CONVNEXT_CHECKPOINT = MODELS_DIR / "convnextbase.keras"
+CONVNEXT_CHECKPOINT   = MODELS_DIR / "convnextbase.keras"
 
 CLASS_NAMES = [
     "Bacterial Leaf Blight",
