@@ -1,27 +1,27 @@
-# Rice Leaf Disease Classification: EfficientNetV2-S vs. ConvNeXtBase
+# Rice Leaf Disease Classification: EfficientNetV2-S vs. Vision Transformer (ViT-B/16)
 
-A controlled empirical benchmark comparing **EfficientNetV2-S** (Lightweight Champion) and **ConvNeXtBase** (Modern ConvNet) for classifying rice leaf diseases, evaluated on a deduplicated, leakage-free dataset split with Explainable AI (**Grad-CAM**) visual attribution and a unified interactive web application.
+A controlled empirical benchmark comparing **EfficientNetV2-S** (Lightweight CNN) and **ViT-B/16** (Vision Transformer) for classifying rice leaf diseases, evaluated on a SHA-256 deduplicated, leakage-free dataset split with dual Explainable AI (**Grad-CAM++ & Attention Saliency**) visual attribution and a unified interactive web application.
 
 ---
 
-## 📊 Benchmark Results (Clean Split v1)
+## 📊 Benchmark Results (Clean Split)
 
-Both models were evaluated on the exact same **570 held-out test images** under identical experimental protocols on a clean, group-stratified test split.
+Both models were evaluated on the exact same **570 held-out test images** under identical experimental protocols on a clean, leakage-free test split.
 
-| Metric | EfficientNetV2-S (Light) | ConvNeXtBase (Deep) | Difference (Δ) | Winner |
+| Metric | EfficientNetV2-S (CNN) | ViT-B/16 (Transformer) | Difference (Δ) | Winner |
 |---|:---:|:---:|:---:|:---:|
-| **Test Accuracy** | **92.81%** | 90.18% | +2.63% | **EfficientNetV2-S** |
-| **Macro F1-Score** | **92.74%** | 90.17% | +2.57% | **EfficientNetV2-S** |
-| **Macro Precision** | **92.81%** | 90.37% | +2.44% | **EfficientNetV2-S** |
-| **Macro Recall** | **92.76%** | 90.12% | +2.64% | **EfficientNetV2-S** |
-| **ROC-AUC (Macro OvR)** | **99.24%** | 98.92% | +0.32% | **EfficientNetV2-S** |
-| **Model Checkpoint Size** | **83.04 MB** | 338.00 MB | −75.4% | **EfficientNetV2-S** |
-| **Total Parameters** | **20,660,838** | 87,832,230 | −76.5% | **EfficientNetV2-S** |
-| **Training Time (25 ep)** | **30.13 min** | 42.37 min | −28.9% | **EfficientNetV2-S** |
-| **Avg Inference Latency (CPU)** | **77.8 ms** | 165.2 ms | −52.9% | **EfficientNetV2-S** |
-| **Throughput (FPS on CPU)** | **12.9 fps** | 6.1 fps | +111.5% | **EfficientNetV2-S** |
+| **Test Accuracy** | 95.26% | **97.72%** | +2.46% | **ViT-B/16** |
+| **Macro F1-Score** | 95.21% | **97.71%** | +2.50% | **ViT-B/16** |
+| **Macro Precision** | 95.23% | **97.80%** | +2.57% | **ViT-B/16** |
+| **Macro Recall** | 95.22% | **97.70%** | +2.48% | **ViT-B/16** |
+| **ROC-AUC (Macro OvR)** | 99.61% | **99.74%** | +0.13% | **ViT-B/16** |
+| **Model Checkpoint Size** | **83.04 MB** | 982.52 MB | −91.5% | **EfficientNetV2-S** |
+| **Total Parameters** | **20,660,838** | 85,803,270 | −75.9% | **EfficientNetV2-S** |
+| **Training Time** | 9.98 min | **4.75 min** | −52.4% | **ViT-B/16** |
+| **Avg Inference Latency (GPU)** | 14.88 ms | **7.64 ms** | −48.7% | **ViT-B/16** |
+| **Throughput (FPS on GPU)** | 67.2 fps | **130.8 fps** | +94.6% | **ViT-B/16** |
 
-> **Key Finding:** EfficientNetV2-S achieved superior generalization across all classification metrics (+2.63% Test Accuracy, +2.57% Macro F1) while requiring **4.25× fewer parameters** and **4.1× less storage** than ConvNeXtBase. Its fused MBConv blocks proved highly effective at capturing fine-grained foliar lesion boundaries.
+> **Key Finding:** **ViT-B/16** achieved the highest generalization across every classification metric (**97.72% Test Accuracy**, **97.71% Macro F1**, **130.8 FPS** on GPU) by using global self-attention to eliminate background shortcut bias. Meanwhile, **EfficientNetV2-S** remains **11.8× lighter** (**83.04 MB** vs. **982.52 MB**) while still achieving **95.26% Test Accuracy**, making it ideal for RAM-constrained deployments.
 
 ---
 
@@ -29,61 +29,63 @@ Both models were evaluated on the exact same **570 held-out test images** under 
 
 The dataset covers six critical rice foliage pathology categories:
 
-| Index | Class Name | Pathogen / Description | EfficientNetV2-S F1 | ConvNeXtBase F1 |
+| Index | Class Name | Pathogen / Description | EfficientNetV2-S F1 | ViT-B/16 F1 |
 |:---:|---|---|:---:|:---:|
-| `0` | **Bacterial Leaf Blight** | Caused by *Xanthomonas oryzae*; marginal water-soaked lesions progressing to yellow-white stripes. | **89.47%** | 87.23% |
-| `1` | **Brown Spot** | Caused by *Cochliobolus miyabeanus*; oval brown spots with yellow halos and dark necrotic centers. | **92.71%** | 90.53% |
-| `2` | **Healthy Rice Leaf** | Clean, uninfected foliage displaying uniform green coloration (baseline control). | **97.49%** | 95.88% |
-| `3` | **Leaf Blast** | Caused by *Magnaporthe oryzae*; spindle-shaped or diamond-shaped lesions with gray centers. | **89.89%** | 86.81% |
-| `4` | **Leaf Scald** | Caused by *Microdochium oryzae*; zonate tan scalds beginning from leaf tips with alternating bands. | **91.67%** | 89.36% |
-| `5` | **Sheath Blight** | Caused by *Rhizoctonia solani*; irregular greenish-gray water-soaked lesions with dark brown margins. | **95.24%** | 93.33% |
+| `0` | **Bacterial Leaf Blight** | Caused by *Xanthomonas oryzae*; marginal water-soaked lesions progressing to yellow-white stripes. | 94.79% | **97.38%** |
+| `1` | **Brown Spot** | Caused by *Cochliobolus miyabeanus*; oval brown spots with yellow halos and dark necrotic centers. | 95.29% | **97.94%** |
+| `2` | **Healthy Rice Leaf** | Clean, uninfected foliage displaying uniform green coloration (baseline control). | 98.99% | **99.49%** |
+| `3` | **Leaf Blast** | Caused by *Magnaporthe oryzae*; spindle-shaped or diamond-shaped lesions with gray centers. | 92.31% | **96.67%** |
+| `4` | **Leaf Scald** | Caused by *Microdochium oryzae*; zonate tan scalds beginning from leaf tips with alternating bands. | 93.55% | **95.88%** |
+| `5` | **Sheath Blight** | Caused by *Rhizoctonia solani*; irregular greenish-gray water-soaked lesions with dark brown margins. | 96.34% | **98.92%** |
 
 ---
 
-## 🔍 Explainable AI: Grad-CAM Feature Attribution
+## 🔍 Explainable AI: Grad-CAM++ & ViT Attention Saliency
 
-To ensure model predictions are based on clinically valid pathological features rather than background artifacts, both models are instrumented with **Gradient-weighted Class Activation Mapping (Grad-CAM)**:
+To ensure model predictions rely on clinically valid pathological features rather than background artifacts (shortcut learning), both architectures are instrumented with visual attribution:
 
-- **Head-Propagation Method:** Instead of relying on internal intermediate hooks, the convolutional backbone's feature maps are watched directly through the classification head (`GlobalAveragePooling2D → Dense(6) Softmax`) using a `tf.GradientTape`. This guarantees reliable gradient flow directly from saved `.keras` checkpoints.
-- **Architectural Attention Patterns:**
-  - **EfficientNetV2-S:** Concentrates gradient activations sharply on pinpoint necrotic lesion margins, providing highly localized visual explanations.
-  - **ConvNeXtBase:** With its large $7 \times 7$ depthwise kernels, pools contextual signals across broader sections of leaf tissue, providing complementary global leaf context.
-- **Interactive Superimposition:** Normalized Grad-CAM heatmaps are colored using OpenCV's `COLORMAP_JET` and dynamically blended with the original leaf image ($\alpha=0.45$) as Base64 Data URLs for zero-latency browser rendering.
+- **EfficientNetV2-S (Grad-CAM++ / Head-Propagation Grad-CAM):**
+  - In the Colab research notebook (`compute_gradcam_plusplus`), higher-order derivatives (1st, 2nd, and 3rd-order gradients via nested `tf.GradientTape`) weight feature maps to isolate sharp, multi-lesion borders.
+  - In the real-time FastAPI backend (`_compute_gradcam_heatmap`), Head-Propagation Grad-CAM watches the backbone feature maps directly through the classification head for low-latency inference.
+- **ViT-B/16 (14×14 Patch Attention Saliency):**
+  - Because KerasHub `ViTImageClassifier` splits `224×224` images into `16×16` patches (`14×14 = 196` tokens) and pools via a 1D CLS token, `_compute_vit_saliency_heatmap` computes input-gradient saliency ($|\partial \text{score} / \partial x|$), average-pools into a `14×14` patch grid (`ksize=16, strides=16`), and clips outliers at the **99th percentile**.
+- **Interactive Superimposition:** Normalized heatmaps are colored using OpenCV's `COLORMAP_JET` and blended with the original leaf image ($\alpha = 0.45$) as Base64 Data URLs for zero-latency browser rendering.
 
 ---
 
 ## 🛡️ Dataset Integrity & Leakage Prevention Pipeline
 
-Data leakage from duplicate images across train/val/test splits artificially inflates model accuracy. A rigorous multi-stage audit was executed:
+Data leakage from duplicate images across train/val/test splits artificially inflates model accuracy. A multi-stage audit was executed and recorded in `dataset_manifests/`:
 
-1. **Exact Duplicate Detection:** MD5 hashing identified 31 exact duplicate groups (62 redundant files).
-2. **Deduplication Strategy:** Exactly 31 redundant copies were isolated, keeping one canonical instance per group.
-3. **Near-Duplicate Audit:** Perceptual hashing (pHash with Hamming distance $\le 10$) flagged visually similar pairs with slight rotations or lighting shifts.
-4. **Group-Stratified Splitting (Clean Split v1):**
+1. **Exact Duplicate Detection (`SHA-256`):** Cryptographic hashing across **3,829 raw files** identified and excluded **31 exact duplicate copies**, leaving **3,798 unique canonical images**.
+2. **Near-Duplicate Segregation (`group_id`):** **67 multi-image near-duplicate groups** (e.g., burst shots or pre-augmented variants) were locked into the same split so no leaf specimen could leak across splits.
+3. **Zero-Leakage Audit in Colab:** `verify_zero_leakage()` verifies `0` overlapping SHA-256 hashes across Train, Validation, and Test at runtime.
+4. **Leakage-Free Stratified Splitting:**
    - **Total Clean Dataset:** 3,798 images
-   - **Training Set (70%):** 2,658 images
-   - **Validation Set (15%):** 570 images
+   - **Training Set (75%):** 2,847 images
+   - **Validation Set (10%):** 381 images
    - **Test Set (15%):** 570 images (zero overlap with train or val)
 
 ---
 
-## 📁 Final Deliverable Structure
+## 📁 Project Structure
 
 ```
-FinalVersion/
+Rice Classification/
 ├── models/
-│   ├── efficientnetv2s.keras          # Champion model (92.81% acc, 83.0 MB, 20.7M params)
-│   └── convnextbase.keras             # Modern ConvNet (90.18% acc, 338.0 MB, 87.8M params)
+│   ├── efficientnetv2s.keras          # Lightweight CNN (95.26% acc, 83.04 MB, 20.66M params)
+│   └── vit_base.keras                 # Vision Transformer (97.72% acc, 982.52 MB, 85.80M params)
 │
 ├── outputs/
-│   ├── efficientnetv2s/               # Metrics, classification report, confusion matrix
-│   ├── convnextbase/                  # Metrics, classification report, confusion matrix
+│   ├── efficientnetv2s/               # Metrics, classification report, confusion matrix, curves
+│   ├── vit_base/                      # Metrics, classification report, confusion matrix, curves
+│   ├── sample_results.json            # Pre-computed XAI sample predictions for instant demo
 │   └── class_images.json              # Pre-cached representative sample thumbnails
 │
 ├── RiceVisionAI/                      # Complete Unified Web Application
 │   ├── backend/
-│   │   ├── main.py                    # FastAPI server (Inference + Grad-CAM + Static SPA)
-│   │   └── requirements.txt           # Python dependencies
+│   │   ├── main.py                    # FastAPI server (Inference + XAI + Static SPA)
+│   │   └── requirements.txt           # Python dependencies (incl. keras-hub)
 │   ├── frontend/
 │   │   ├── src/                       # React 19 + TypeScript + Tailwind CSS UI
 │   │   ├── dist/                      # Pre-compiled static production assets
@@ -93,16 +95,18 @@ FinalVersion/
 │   └── start_frontend.bat             # Standalone frontend dev launcher (:5173)
 │
 ├── notebooks/
-│   └── Colab_RiceDisease_EfficientNetV2S_vs_ConvNeXtBase _Fix.ipynb # Complete training notebook
+│   └── Colab_RiceDisease_EfficientNetV2S_vs_ViTB16.ipynb # Complete training & XAI notebook
 │
 ├── dataset_manifests/
-│   ├── train.csv                      # Audited train split manifest (2,658 samples)
-│   ├── validation.csv                 # Audited validation split manifest (570 samples)
+│   ├── train.csv                      # Audited train split manifest (2,847 samples)
+│   ├── validation.csv                 # Audited validation split manifest (381 samples)
 │   ├── test.csv                       # Audited test split manifest (570 samples)
-│   └── duplicate_groups.csv           # Deduplication audit manifest
+│   ├── all_images_audit.csv           # Full 3,829-file SHA-256 audit log
+│   └── duplicate_groups.csv           # Exact & near-duplicate cluster manifest
 │
+├── generate_sample_results.py         # Pre-computes XAI sample gallery JSON
 ├── start_app.bat                      # 1-Click launcher (starts server & opens browser)
-└── README.md                          # Final project documentation (this file)
+└── README.md                          # Project documentation (this file)
 ```
 
 ---
@@ -116,8 +120,8 @@ The web application provides an interactive decision-support interface and resea
 Double-click **`start_app.bat`** (or execute `.\start_app.bat` from PowerShell).
 
 This automatically starts the FastAPI server and opens your browser at **`http://localhost:8000`**:
-- **⚡ 1-Click Dual Mode Predictor (`/predict`):** Upload any leaf photo or choose from the built-in 6-class sample gallery to run **EfficientNetV2-S** and **ConvNeXtBase** side-by-side.
-- **👁️ Grad-CAM Visualizer:** Compare side-by-side heatmaps with interactive view mode toggles (*Overlay Heatmap*, *Raw Heatmap*, *Original Leaf*) and an adjustable **Opacity Slider** (20% – 100%).
+- **⚡ 1-Click Dual Mode Predictor (`/predict`):** Upload any leaf photo or choose from the built-in 6-class sample gallery to run **EfficientNetV2-S** and **ViT-B/16** side-by-side (or test live in the [Google Colab Demo](https://colab.research.google.com/drive/1PdU8uo0_waMQJ6sf2Qq-6Uh0GeEk-qOy?usp=sharing)).
+- **👁️ Dual XAI Visualizer:** Compare **Grad-CAM** (EfficientNetV2-S) and **Attention Saliency** (ViT-B/16) heatmaps with interactive view mode toggles (*Overlay Heatmap*, *Raw Heatmap*, *Original Leaf*) and an adjustable **Opacity Slider** (20% – 100%).
 - **⚖️ Consensus Detection:** Displays high-confidence consensus when models agree or highlights differential diagnoses when they diverge.
 - **📊 Model Comparison Dashboard (`/comparison`):** Head-to-head radar performance profiles, full $6 \times 6$ interactive confusion matrices, and parameter efficiency tables.
 - **📖 Disease Class Reference (`/classes`):** Symptoms, high-resolution imagery, and agronomist-recommended intervention guidelines.
@@ -127,17 +131,17 @@ This automatically starts the FastAPI server and opens your browser at **`http:/
 ## ⚙️ Google Colab Training & Reproduction
 
 To retrain or reproduce the benchmark in Google Colab:
-1. Open [`notebooks/Colab_RiceDisease_EfficientNetV2S_vs_ConvNeXtBase _Fix.ipynb`](notebooks/Colab_RiceDisease_EfficientNetV2S_vs_ConvNeXtBase%20_Fix.ipynb) in Google Colab.
-2. Select runtime: **Python 3 with T4 GPU**.
+1. Open [`notebooks/Colab_RiceDisease_EfficientNetV2S_vs_ViTB16.ipynb`](notebooks/Colab_RiceDisease_EfficientNetV2S_vs_ViTB16.ipynb) in Google Colab.
+2. Select runtime: **Python 3 with A100 / L4 GPU**.
 3. Mount Google Drive and verify dataset manifests under `dataset_manifests/`.
 4. Execute cells sequentially:
-   - Cell 1-10: Environment setup, random seed fixing (`seed=42`), and dataset preparation.
-   - Cell 11-18: EfficientNetV2-S fine-tuning with cosine decay learning rate and early stopping.
-   - Cell 19-26: ConvNeXtBase fine-tuning under identical optimizer and loss protocols.
-   - Cell 27-34: Standardized latency profiling and Grad-CAM generation.
+   - Setup & Data Audit: Environment setup (`keras-hub`), random seed fixing (`seed=42`), SHA-256 deduplication & zero-leakage verification.
+   - EfficientNetV2-S Training: Two-stage transfer learning (frozen head + full fine-tuning).
+   - ViT-B/16 Training: Fine-tuning `vit_base_patch16_224_imagenet` with AdamW / ReduceLROnPlateau.
+   - Evaluation & XAI: Standardized latency profiling, head-to-head comparison table, and Grad-CAM++ vs. ViT Attention Saliency visualization.
 
 ---
 
 ## ⚠️ Academic & Practical Disclaimer
 
-This system is an **educational research prototype** developed for comparative computer vision research. Model prediction scores and Grad-CAM feature heatmaps are deep learning research outputs intended for decision-support and should be verified with qualified agricultural extension officers or plant pathologists before implementing commercial crop treatments.
+This system is an **educational research prototype** developed for comparative computer vision research. Model prediction scores and XAI heatmaps are deep learning research outputs intended for decision-support and should be verified with qualified agricultural extension officers or plant pathologists before implementing commercial crop treatments.
