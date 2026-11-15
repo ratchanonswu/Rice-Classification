@@ -56,7 +56,7 @@ To ensure model predictions are based on clinically valid pathological features 
 
 Data leakage from duplicate images across train/val/test splits artificially inflates model accuracy. A rigorous multi-stage audit was executed:
 
-1. **Exact Duplicate Detection:** MD5 hashing identified 31 exact duplicate groups (62 redundant files).
+1. **Exact Duplicate Detection:** SHA-256 hashing identified 31 exact duplicate groups (62 redundant files).
 2. **Deduplication Strategy:** Exactly 31 redundant copies were isolated, keeping one canonical instance per group.
 3. **Near-Duplicate Audit:** Perceptual hashing (pHash with Hamming distance $\le 10$) flagged visually similar pairs with slight rotations or lighting shifts.
 4. **Group-Stratified Splitting (Clean Split v1):**
