@@ -1,7 +1,7 @@
 """
 RiceVision AI – FastAPI Backend
-Rice Leaf Disease Classification Research Dashboard & Explainable AI (Grad-CAM)
-Dual Model Benchmark: EfficientNetV2-S vs ConvNeXtBase
+Rice Leaf Disease Classification Research Dashboard & Explainable AI (Grad-CAM & ViT Saliency)
+Dual Model Benchmark: EfficientNetV2-S vs Vision Transformer (ViT-B/16)
 """
 
 import json
@@ -16,6 +16,7 @@ import numpy as np
 import cv2
 from PIL import Image
 import tensorflow as tf
+import keras_hub
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,7 +45,7 @@ FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", str(BACKEND_DIR.parent / "fronte
 DATASET_DIR = PROJECT_ROOT / "Rice Diseases Classification" / "ResNet50" / "dataset"
 
 EFFIENTNET_CHECKPOINT = MODELS_DIR / "efficientnetv2s.keras"
-CONVNEXT_CHECKPOINT   = MODELS_DIR / "convnextbase.keras"
+VIT_CHECKPOINT        = MODELS_DIR / "vit_base.keras"
 
 CLASS_NAMES = [
     "Bacterial Leaf Blight",
@@ -62,7 +63,7 @@ SINGLE_MODEL = os.getenv("SINGLE_MODEL", "")
 
 app = FastAPI(
     title="RiceVision AI",
-    description="Rice Leaf Disease Classification – EfficientNetV2-S vs ConvNeXtBase with Grad-CAM Explainability",
+    description="Rice Leaf Disease Classification – EfficientNetV2-S vs ViT-B/16 with Explainable AI",
     version="2.0.0",
 )
 
@@ -96,14 +97,14 @@ def _get_class_names() -> List[str]:
 
 
 def _load_model(name: str):
-    """Load and cache a model by name ('efficientnetv2s' or 'convnextbase')."""
+    """Load and cache a model by name ('efficientnetv2s' or 'vit_base')."""
     if name in _models:
         return _models[name]
 
     if name == "efficientnetv2s":
         path = EFFIENTNET_CHECKPOINT
-    elif name == "convnextbase":
-        path = CONVNEXT_CHECKPOINT
+    elif name == "vit_base":
+        path = VIT_CHECKPOINT
     else:
         raise ValueError(f"Unknown model name: {name}")
 
@@ -118,8 +119,7 @@ def _load_model(name: str):
 def _compute_gradcam_heatmap(img_tensor: tf.Tensor, model: Any, pred_index: Optional[int] = None) -> np.ndarray:
     """
     Computes a normalized Grad-CAM heatmap for an input image tensor (shape: 1, 224, 224, 3)
-    using head-propagation through the classification layers.
-    Works seamlessly on both EfficientNetV2-S and ConvNeXtBase .keras models.
+    using head-propagation through the classification layers for EfficientNetV2-S.
     """
     backbone = model.layers[1]
     head_layers = model.layers[2:]
@@ -158,8 +158,28 @@ def _compute_gradcam_heatmap(img_tensor: tf.Tensor, model: Any, pred_index: Opti
     return heatmap.numpy()
 
 
+def _compute_vit_saliency_heatmap(img_tensor: tf.Tensor, vit_model: Any) -> np.ndarray:
+    """
+    Computes gradient saliency attention map for ViT-B/16 pooled into 14x14 patches.
+    """
+    x = tf.convert_to_tensor(img_tensor, dtype=tf.float32)
+    with tf.GradientTape() as tape:
+        tape.watch(x)
+        preds = vit_model(x, training=False)
+        pred_idx = tf.argmax(preds[0])
+        score = preds[0, pred_idx]
+    grads = tape.gradient(score, x)
+    sal = tf.reduce_sum(tf.abs(grads), axis=-1, keepdims=True)
+    grid = tf.nn.avg_pool2d(sal, ksize=16, strides=16, padding="VALID")
+    grid = grid[0, :, :, 0].numpy()
+    grid = np.clip(grid, 0, np.percentile(grid, 99))
+    if grid.max() > 0:
+        grid = grid / grid.max()
+    return grid
+
+
 def _overlay_gradcam(original_img_pil: Image.Image, heatmap: np.ndarray, alpha: float = 0.45):
-    """Overlays Grad-CAM heatmap onto the original PIL image and generates Base64 Data URLs."""
+    """Overlays Grad-CAM or Saliency heatmap onto original PIL image and generates Base64 Data URLs."""
     orig_np = np.array(original_img_pil.convert("RGB"))
     h, w, _ = orig_np.shape
 
@@ -185,29 +205,39 @@ def _overlay_gradcam(original_img_pil: Image.Image, heatmap: np.ndarray, alpha: 
 
 
 def _run_single_inference(img: Image.Image, model_name: str) -> Dict[str, Any]:
-    """Execute prediction and Grad-CAM generation for a single model."""
+    """Execute prediction and XAI generation for a single model."""
     model = _load_model(model_name)
     class_names = _get_class_names()
 
     # Preprocess image
     img_resized = img.convert("RGB").resize((224, 224))
     arr = np.array(img_resized, dtype=np.float32)
-    img_tensor = tf.convert_to_tensor(np.expand_dims(arr, axis=0), dtype=tf.float32)
 
-    t0 = time.perf_counter()
-    preds = model.predict(img_tensor, verbose=0)
-    inference_ms = round((time.perf_counter() - t0) * 1000, 1)
+    if model_name == "vit_base":
+        arr = (arr / 127.5) - 1.0
+        img_tensor = tf.convert_to_tensor(np.expand_dims(arr, axis=0), dtype=tf.float32)
+        t0 = time.perf_counter()
+        preds = model(img_tensor, training=False).numpy()
+        inference_ms = round((time.perf_counter() - t0) * 1000, 1)
+        heatmap = _compute_vit_saliency_heatmap(img_tensor, model)
+        model_label = "ViT-B/16 (Vision Transformer)"
+    else:
+        img_tensor = tf.convert_to_tensor(np.expand_dims(arr, axis=0), dtype=tf.float32)
+        t0 = time.perf_counter()
+        preds = model.predict(img_tensor, verbose=0)
+        inference_ms = round((time.perf_counter() - t0) * 1000, 1)
+        top_idx_eff = int(np.argmax(preds[0]))
+        heatmap = _compute_gradcam_heatmap(img_tensor, model, top_idx_eff)
+        model_label = "EfficientNetV2-S"
 
     scores = preds[0].tolist()
     top_idx = int(np.argmax(scores))
 
-    # Generate Grad-CAM
-    heatmap = _compute_gradcam_heatmap(img_tensor, model, top_idx)
     overlay_b64, raw_b64 = _overlay_gradcam(img, heatmap, alpha=0.45)
 
     return {
         "model": model_name,
-        "model_label": "EfficientNetV2-S" if "eff" in model_name else "ConvNeXtBase",
+        "model_label": model_label,
         "predicted_class": class_names[top_idx],
         "predicted_index": top_idx,
         "confidence": round(float(scores[top_idx]), 4),
@@ -273,9 +303,9 @@ def health():
     return {
         "status": "ok",
         "efficientnetv2s_available": EFFIENTNET_CHECKPOINT.exists(),
-        "convnextbase_available": CONVNEXT_CHECKPOINT.exists(),
+        "vit_base_available": VIT_CHECKPOINT.exists(),
         "efficientnetv2s_loaded": "efficientnetv2s" in _models,
-        "convnextbase_loaded": "convnextbase" in _models,
+        "vit_base_loaded": "vit_base" in _models,
         "active_models": list(_models.keys()),
     }
 
@@ -341,21 +371,21 @@ def get_models():
         return {}
 
     eff_metrics = _read_json(OUTPUTS_DIR / "efficientnetv2s" / "metrics.json")
-    conv_metrics = _read_json(OUTPUTS_DIR / "convnextbase" / "metrics.json")
+    vit_metrics = _read_json(OUTPUTS_DIR / "vit_base" / "metrics.json")
 
     eff_efficiency = _read_json(OUTPUTS_DIR / "efficientnetv2s" / "efficiency.json")
-    conv_efficiency = _read_json(OUTPUTS_DIR / "convnextbase" / "efficiency.json")
+    vit_efficiency = _read_json(OUTPUTS_DIR / "vit_base" / "efficiency.json")
 
-    # Fallback default values if outputs are still evaluating
+    # Fallback default values
     if not eff_metrics:
         eff_metrics = {
             "model": "efficientnetv2s",
             "test_sample_count": 570,
-            "accuracy": 0.9070,
-            "precision_macro": 0.9086,
-            "recall_macro": 0.9067,
-            "f1_score_macro": 0.9068,
-            "roc_auc_macro": 0.9910,
+            "accuracy": 0.9281,
+            "precision_macro": 0.9281,
+            "recall_macro": 0.9276,
+            "f1_score_macro": 0.9274,
+            "roc_auc_macro": 0.9924,
         }
     if not eff_efficiency:
         eff_efficiency = {
@@ -371,27 +401,27 @@ def get_models():
             }
         }
 
-    if not conv_metrics:
-        conv_metrics = {
-            "model": "convnextbase",
+    if not vit_metrics:
+        vit_metrics = {
+            "model": "vit_base",
             "test_sample_count": 570,
-            "accuracy": 0.8825,
-            "precision_macro": 0.8857,
-            "recall_macro": 0.8817,
-            "f1_score_macro": 0.8825,
-            "roc_auc_macro": 0.9870,
+            "accuracy": 0.9772,
+            "precision_macro": 0.9780,
+            "recall_macro": 0.9770,
+            "f1_score_macro": 0.9771,
+            "roc_auc_macro": 0.9974,
         }
-    if not conv_efficiency:
-        conv_efficiency = {
-            "model_architecture": "ConvNeXtBase",
-            "total_parameters": 87832230,
-            "trainable_parameters": 1024006,
-            "model_file_size_mb": 338.0,
-            "training_time_minutes": 42.37,
+    if not vit_efficiency:
+        vit_efficiency = {
+            "model_architecture": "ViT-B/16 (Vision Transformer)",
+            "total_parameters": 85803270,
+            "trainable_parameters": 85803270,
+            "model_file_size_mb": 982.52,
+            "training_time_minutes": 4.75,
             "inference_latency": {
                 "profiled_samples": 50,
-                "average_inference_time_ms": 165.2,
-                "throughput_fps": 6.1
+                "average_inference_time_ms": 7.64,
+                "throughput_fps": 130.8
             }
         }
 
@@ -401,10 +431,10 @@ def get_models():
             "metrics": eff_metrics,
             "efficiency": eff_efficiency,
         },
-        "convnextbase": {
-            "available": CONVNEXT_CHECKPOINT.exists(),
-            "metrics": conv_metrics,
-            "efficiency": conv_efficiency,
+        "vit_base": {
+            "available": VIT_CHECKPOINT.exists(),
+            "metrics": vit_metrics,
+            "efficiency": vit_efficiency,
         },
     }
 
@@ -450,17 +480,17 @@ def get_metrics():
     eff_report_path = OUTPUTS_DIR / "efficientnetv2s" / "classification_report.csv"
     eff_cm_path = OUTPUTS_DIR / "efficientnetv2s" / "efficientnetv2s_confusion_matrix.csv"
 
-    conv_report_path = OUTPUTS_DIR / "convnextbase" / "classification_report.csv"
-    conv_cm_path = OUTPUTS_DIR / "convnextbase" / "convnextbase_confusion_matrix.csv"
+    vit_report_path = OUTPUTS_DIR / "vit_base" / "classification_report.csv"
+    vit_cm_path = OUTPUTS_DIR / "vit_base" / "vit_base_confusion_matrix.csv"
 
     return {
         "efficientnetv2s": {
             "per_class": _read_report(eff_report_path),
             "confusion_matrix": _read_confusion(eff_cm_path),
         },
-        "convnextbase": {
-            "per_class": _read_report(conv_report_path),
-            "confusion_matrix": _read_confusion(conv_cm_path),
+        "vit_base": {
+            "per_class": _read_report(vit_report_path),
+            "confusion_matrix": _read_confusion(vit_cm_path),
         },
         "class_names": CLASS_NAMES,
     }
@@ -479,14 +509,14 @@ def get_sample_results():
 @app.post("/api/predict")
 async def predict(
     file: UploadFile = File(...),
-    model: str = Query("both", description="Model to use: 'both' (default), 'efficientnetv2s', or 'convnextbase'"),
+    model: str = Query("both", description="Model to use: 'both' (default), 'efficientnetv2s', or 'vit_base'"),
 ):
     """
-    Accepts an uploaded image and performs inference and Grad-CAM generation.
+    Accepts an uploaded image and performs inference and XAI generation.
     Supports Dual Mode ('both') for one-click side-by-side comparison!
     """
-    if model not in ("both", "efficientnetv2s", "convnextbase"):
-        raise HTTPException(status_code=400, detail="model must be 'both', 'efficientnetv2s', or 'convnextbase'")
+    if model not in ("both", "efficientnetv2s", "vit_base"):
+        raise HTTPException(status_code=400, detail="model must be 'both', 'efficientnetv2s', or 'vit_base'")
 
     # In single-model deployments, redirect "both" to the available model
     if SINGLE_MODEL:
@@ -510,17 +540,17 @@ async def predict(
         raise HTTPException(status_code=400, detail="Could not decode image. Please ensure valid image file.")
 
     disclaimer = (
-        "Predictions and Grad-CAM heatmaps are deep learning research outputs intended for decision-support. "
-        "Grad-CAM highlights key lesion features influencing classification. Results should be verified with field agronomists."
+        "Predictions, Grad-CAM, and ViT Saliency heatmaps are deep learning research outputs intended for decision-support. "
+        "Heatmaps highlight key lesion features influencing classification. Results should be verified with field agronomists."
     )
 
     if model == "both":
         eff_res = _run_single_inference(img, "efficientnetv2s")
-        conv_res = _run_single_inference(img, "convnextbase")
+        vit_res = _run_single_inference(img, "vit_base")
         return {
             "mode": "both",
             "efficientnetv2s": eff_res,
-            "convnextbase": conv_res,
+            "vit_base": vit_res,
             "disclaimer": disclaimer,
         }
     else:
