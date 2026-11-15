@@ -57,10 +57,10 @@ To ensure model predictions rely on clinically valid pathological features rathe
 
 Data leakage from duplicate images across train/val/test splits artificially inflates model accuracy. A multi-stage audit was executed and recorded in `dataset_manifests/`:
 
-1. **Exact Duplicate Detection (`SHA-256`):** Cryptographic hashing across **3,829 raw files** identified and excluded **31 exact duplicate copies**, leaving **3,798 unique canonical images**.
-2. **Near-Duplicate Segregation (`group_id`):** **67 multi-image near-duplicate groups** (e.g., burst shots or pre-augmented variants) were locked into the same split so no leaf specimen could leak across splits.
-3. **Zero-Leakage Audit in Colab:** `verify_zero_leakage()` verifies `0` overlapping SHA-256 hashes across Train, Validation, and Test at runtime.
-4. **Leakage-Free Stratified Splitting:**
+1. **Exact Duplicate Detection:** SHA-256 hashing identified 31 exact duplicate groups (62 redundant files).
+2. **Deduplication Strategy:** Exactly 31 redundant copies were isolated, keeping one canonical instance per group.
+3. **Near-Duplicate Audit:** Perceptual hashing (pHash with Hamming distance $\le 10$) flagged visually similar pairs with slight rotations or lighting shifts.
+4. **Group-Stratified Splitting (Clean Split v1):**
    - **Total Clean Dataset:** 3,798 images
    - **Training Set (75%):** 2,847 images
    - **Validation Set (10%):** 381 images
