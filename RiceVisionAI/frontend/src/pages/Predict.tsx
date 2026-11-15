@@ -349,7 +349,7 @@ export default function Predict() {
 
               <div className="flex flex-wrap gap-3 pt-1">
                 <a
-                  href="https://colab.research.google.com/drive/197JoUaecxXV8inLMMK1PQWrZhoENJEOn?usp=sharing"
+                  href="https://colab.research.google.com/drive/1PdU8uo0_waMQJ6sf2Qq-6Uh0GeEk-qOy?usp=sharing"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-bold rounded-xl shadow transition-all hover:shadow-md"
