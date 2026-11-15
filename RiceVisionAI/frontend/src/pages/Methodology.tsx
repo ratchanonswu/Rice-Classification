@@ -48,14 +48,14 @@ const steps: Step[] = [
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>
-          An automated deduplication pipeline identified duplicate groups using MD5 and perceptual hashing (pHash).
-          Exact duplicate clusters were isolated so no identical leaf specimen could leak across train, validation,
+          An automated deduplication pipeline identified exact duplicate groups using SHA-256 cryptographic hashing.
+          Duplicate clusters were isolated so no identical leaf specimen could leak across train, validation,
           and test splits.
         </p>
         <ul className="space-y-1.5 list-disc list-inside text-xs text-slate-500">
-          <li>31 duplicate clusters grouped; canonical single instances preserved</li>
-          <li>Group-stratified splitting: 70% train (2,658), 15% validation (570), 15% test (570)</li>
-          <li>All splits audited for class distribution balance and group segregation</li>
+          <li>31 exact duplicate copies excluded; 3,798 unique canonical images preserved</li>
+          <li>Leakage-free stratified splitting: 75% train (2,847), 10% validation (381), 15% test (570)</li>
+          <li>All splits audited for class distribution balance and zero SHA-256 hash overlap</li>
         </ul>
       </div>
     ),
