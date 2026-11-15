@@ -1,13 +1,9 @@
 {
-  "model": "vit_base",
-  "test_sample_count": 570,
+  "model_name": "ViT_Base",
+  "test_samples": 570,
   "accuracy": 0.9772,
   "precision_macro": 0.978,
-  "precision_weighted": 0.9778,
   "recall_macro": 0.977,
-  "recall_weighted": 0.9772,
   "f1_score_macro": 0.9771,
-  "f1_score_weighted": 0.9772,
-  "roc_auc_macro": 0.9974,
-  "roc_auc_weighted": 0.9974
+  "roc_auc_macro": 0.9974
 }

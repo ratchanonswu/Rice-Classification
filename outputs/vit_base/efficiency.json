@@ -1,17 +1,7 @@
 {
-  "model_architecture": "ViT-B/16",
+  "model_name": "ViT_Base",
   "total_parameters": 85803270,
   "trainable_parameters": 85803270,
-  "model_file_path": "models/vit_base.keras",
-  "model_file_size_bytes": 1030242694,
-  "model_file_size_mb": 982.52,
-  "training_time_seconds": 285.0,
-  "training_time_minutes": 4.75,
-  "inference_latency": {
-    "profiled_samples": 50,
-    "average_inference_time_ms": 7.64,
-    "median_inference_time_ms": 7.64,
-    "std_inference_time_ms": 0.5,
-    "throughput_fps": 130.8
-  }
+  "average_latency_ms": 7.64,
+  "throughput_fps": 130.8
 }
