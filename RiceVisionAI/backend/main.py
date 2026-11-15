@@ -381,23 +381,23 @@ def get_models():
         eff_metrics = {
             "model": "efficientnetv2s",
             "test_sample_count": 570,
-            "accuracy": 0.9281,
-            "precision_macro": 0.9281,
-            "recall_macro": 0.9276,
-            "f1_score_macro": 0.9274,
-            "roc_auc_macro": 0.9924,
+            "accuracy": 0.9526,
+            "precision_macro": 0.9523,
+            "recall_macro": 0.9522,
+            "f1_score_macro": 0.9521,
+            "roc_auc_macro": 0.9961,
         }
     if not eff_efficiency:
         eff_efficiency = {
             "model_architecture": "EfficientNetV2-S",
             "total_parameters": 20660838,
-            "trainable_parameters": 329478,
+            "trainable_parameters": 20506966,
             "model_file_size_mb": 83.04,
-            "training_time_minutes": 30.13,
+            "training_time_minutes": 9.98,
             "inference_latency": {
                 "profiled_samples": 50,
-                "average_inference_time_ms": 77.8,
-                "throughput_fps": 12.9
+                "average_inference_time_ms": 14.88,
+                "throughput_fps": 67.2
             }
         }
 
@@ -424,6 +424,43 @@ def get_models():
                 "throughput_fps": 130.8
             }
         }
+
+    def _normalize_efficiency(
+        raw: dict,
+        arch_name: str,
+        default_size_mb: float,
+        default_train_min: float,
+        checkpoint_path: Path,
+    ) -> dict:
+        size_mb = raw.get("model_file_size_mb")
+        if size_mb is None:
+            size_mb = (
+                round(checkpoint_path.stat().st_size / (1024 * 1024), 2)
+                if checkpoint_path.exists()
+                else default_size_mb
+            )
+        latency = raw.get("inference_latency") or {}
+        avg_ms = latency.get("average_inference_time_ms", raw.get("average_latency_ms", 0.0))
+        fps = latency.get("throughput_fps", raw.get("throughput_fps", 0.0))
+        return {
+            "model_architecture": raw.get("model_architecture", raw.get("model_name", arch_name)),
+            "total_parameters": raw.get("total_parameters", 0),
+            "trainable_parameters": raw.get("trainable_parameters", 0),
+            "model_file_size_mb": size_mb,
+            "training_time_minutes": raw.get("training_time_minutes", default_train_min),
+            "inference_latency": {
+                "profiled_samples": latency.get("profiled_samples", 50),
+                "average_inference_time_ms": avg_ms,
+                "throughput_fps": fps,
+            },
+        }
+
+    eff_efficiency = _normalize_efficiency(
+        eff_efficiency, "EfficientNetV2-S", 83.04, 9.98, EFFIENTNET_CHECKPOINT
+    )
+    vit_efficiency = _normalize_efficiency(
+        vit_efficiency, "ViT-B/16 (Vision Transformer)", 982.52, 4.75, VIT_CHECKPOINT
+    )
 
     return {
         "efficientnetv2s": {
@@ -478,10 +515,14 @@ def get_metrics():
         return result
 
     eff_report_path = OUTPUTS_DIR / "efficientnetv2s" / "classification_report.csv"
-    eff_cm_path = OUTPUTS_DIR / "efficientnetv2s" / "efficientnetv2s_confusion_matrix.csv"
+    eff_cm_path = OUTPUTS_DIR / "efficientnetv2s" / "confusion_matrix.csv"
+    if not eff_cm_path.exists():
+        eff_cm_path = OUTPUTS_DIR / "efficientnetv2s" / "efficientnetv2s_confusion_matrix.csv"
 
     vit_report_path = OUTPUTS_DIR / "vit_base" / "classification_report.csv"
-    vit_cm_path = OUTPUTS_DIR / "vit_base" / "vit_base_confusion_matrix.csv"
+    vit_cm_path = OUTPUTS_DIR / "vit_base" / "confusion_matrix.csv"
+    if not vit_cm_path.exists():
+        vit_cm_path = OUTPUTS_DIR / "vit_base" / "vit_base_confusion_matrix.csv"
 
     return {
         "efficientnetv2s": {
