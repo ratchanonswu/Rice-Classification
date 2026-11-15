@@ -28,7 +28,7 @@ export default function Overview() {
   if (error) return <ErrorBanner message={`Could not reach backend: ${error}`} />;
 
   const eff = models?.efficientnetv2s;
-  const conv = models?.convnextbase;
+  const vit = models?.vit_base;
 
   return (
     <div className="space-y-10 max-w-7xl mx-auto pb-12">
@@ -46,9 +46,9 @@ export default function Overview() {
             Rice Leaf Disease Classification & Explainable AI
           </h1>
           <p className="text-green-100 text-base leading-relaxed mb-8 max-w-2xl">
-            A controlled, data-leakage-free study comparing <strong>EfficientNetV2-S</strong> (Lightweight Champion)
-            and <strong>ConvNeXtBase</strong> (Modern ConvNet) on 3,798 images across 6 rice diseases, featuring
-            on-the-fly <strong>Grad-CAM visual attribution maps</strong>.
+            A controlled, data-leakage-free study comparing <strong>EfficientNetV2-S</strong> (Lightweight CNN)
+            and <strong>ViT-B/16</strong> (Pretrained Vision Transformer) on 3,798 images across 6 rice diseases, featuring
+            on-the-fly <strong>Grad-CAM & Attention Saliency attribution heatmaps</strong>.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -57,7 +57,7 @@ export default function Overview() {
               className="flex items-center gap-2 px-6 py-3.5 bg-white text-green-900 rounded-xl text-sm font-bold hover:bg-green-50 shadow-md hover:shadow-lg transition-all"
             >
               <Upload className="w-4 h-4 text-green-700" />
-              Try Dual Predictor & Grad-CAM
+              Try Dual Predictor & XAI
             </Link>
             <Link
               to="/comparison"
@@ -93,9 +93,9 @@ export default function Overview() {
             </span>
             <span>·</span>
             <span>
-              ConvNeXtBase:{' '}
-              <strong className={health?.convnextbase_available ? 'text-green-700' : 'text-red-600'}>
-                {health?.convnextbase_available ? 'Loaded (338 MB)' : 'Missing'}
+              ViT-B/16 (Transformer):{' '}
+              <strong className={health?.vit_base_available ? 'text-purple-700' : 'text-red-600'}>
+                {health?.vit_base_available ? 'Loaded (982 MB)' : 'Missing'}
               </strong>
             </span>
           </div>
@@ -118,14 +118,14 @@ export default function Overview() {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <span className="text-xs font-bold text-green-700 uppercase tracking-wider bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
-                  Top Performance
+                  Lightweight Champion
                 </span>
                 <h3 className="text-2xl font-black text-slate-900 mt-2">EfficientNetV2-S</h3>
-                <p className="text-xs text-slate-500 mt-1">Lightweight Fused-MBConv CNN Architecture</p>
+                <p className="text-xs text-slate-500 mt-1">Fused-MBConv CNN Architecture</p>
               </div>
               <div className="text-right">
                 <span className="text-3xl font-extrabold text-green-700">
-                  {eff ? `${(eff.metrics.accuracy * 100).toFixed(1)}%` : '92.8%'}
+                  {eff ? `${(eff.metrics.accuracy * 100).toFixed(1)}%` : '95.3%'}
                 </span>
                 <p className="text-[11px] font-semibold text-slate-400 uppercase">Test Accuracy</p>
               </div>
@@ -139,7 +139,7 @@ export default function Overview() {
               <div>
                 <p className="text-xs text-slate-400 font-medium">Macro F1</p>
                 <p className="text-base font-bold text-green-700 mt-0.5">
-                  {eff ? `${(eff.metrics.f1_score_macro * 100).toFixed(1)}%` : '92.7%'}
+                  {eff ? `${(eff.metrics.f1_score_macro * 100).toFixed(1)}%` : '95.2%'}
                 </p>
               </div>
               <div>
@@ -149,7 +149,7 @@ export default function Overview() {
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              EfficientNetV2-S achieved the highest overall classification accuracy and macro F1 score.
+              EfficientNetV2-S provides fast, highly efficient mobile-friendly inference with 95.3% accuracy.
               Its Grad-CAM heatmaps demonstrate tight, pinpoint localization around distinct disease lesion boundaries.
             </p>
 
@@ -161,19 +161,19 @@ export default function Overview() {
             </Link>
           </div>
 
-          {/* ConvNeXtBase Card */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+          {/* ViT-B/16 Card */}
+          <div className="bg-white border-2 border-purple-500/30 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <span className="text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
-                  Modern ConvNet
+                <span className="text-xs font-bold text-purple-700 uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
+                  Top Accuracy (97.7%)
                 </span>
-                <h3 className="text-2xl font-black text-slate-900 mt-2">ConvNeXtBase</h3>
-                <p className="text-xs text-slate-500 mt-1">7x7 Depthwise Large-Kernel Architecture</p>
+                <h3 className="text-2xl font-black text-slate-900 mt-2">ViT-B/16 (Transformer)</h3>
+                <p className="text-xs text-slate-500 mt-1">Multi-Head Self-Attention Vision Transformer</p>
               </div>
               <div className="text-right">
-                <span className="text-3xl font-extrabold text-blue-700">
-                  {conv ? `${(conv.metrics.accuracy * 100).toFixed(1)}%` : '90.2%'}
+                <span className="text-3xl font-extrabold text-purple-700">
+                  {vit ? `${(vit.metrics.accuracy * 100).toFixed(1)}%` : '97.7%'}
                 </span>
                 <p className="text-[11px] font-semibold text-slate-400 uppercase">Test Accuracy</p>
               </div>
@@ -182,30 +182,30 @@ export default function Overview() {
             <div className="grid grid-cols-3 gap-3 my-5 py-4 border-y border-slate-100 text-center">
               <div>
                 <p className="text-xs text-slate-400 font-medium">Parameters</p>
-                <p className="text-base font-bold text-slate-800 mt-0.5">87.8 M</p>
+                <p className="text-base font-bold text-slate-800 mt-0.5">85.8 M</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-medium">Macro F1</p>
-                <p className="text-base font-bold text-blue-700 mt-0.5">
-                  {conv ? `${(conv.metrics.f1_score_macro * 100).toFixed(1)}%` : '90.2%'}
+                <p className="text-base font-bold text-purple-700 mt-0.5">
+                  {vit ? `${(vit.metrics.f1_score_macro * 100).toFixed(1)}%` : '97.7%'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 font-medium">Model Size</p>
-                <p className="text-base font-bold text-slate-800 mt-0.5">338 MB</p>
+                <p className="text-xs text-slate-400 font-medium">Throughput</p>
+                <p className="text-base font-bold text-slate-800 mt-0.5">130.8 FPS</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              ConvNeXt modernizes traditional ConvNets inspired by Vision Transformers. Its large receptive field
-              pools context across broader sections of leaf tissue, providing complementary diagnostic signals.
+              Vision Transformer (ViT-B/16) leverages global self-attention across 196 image patches to eliminate background shortcut bias,
+              achieving state-of-the-art 97.72% test accuracy on unseen leaf specimens.
             </p>
 
             <Link
               to="/predict"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-800"
             >
-              Test with ConvNeXtBase <ArrowRight className="w-3.5 h-3.5" />
+              Test with ViT-B/16 <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -219,19 +219,19 @@ export default function Overview() {
           </div>
           <h4 className="font-bold text-slate-800 text-sm">Dual Mode via 1-Click</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Run both architectures on a single leaf image concurrently to cross-validate diagnostic hypotheses
-            and highlight agreement or divergence.
+            Run both CNN and Vision Transformer on a single leaf image concurrently to cross-validate diagnostic hypotheses
+            and observe how inductive bias vs self-attention differ.
           </p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
             <Sparkles className="w-5 h-5" />
           </div>
-          <h4 className="font-bold text-slate-800 text-sm">Explainable Grad-CAM</h4>
+          <h4 className="font-bold text-slate-800 text-sm">Explainable AI (Grad-CAM & Saliency)</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Head-propagation Gradient-weighted Class Activation Mapping displays exact activation heatmaps
-            directly superimposed onto the specimen leaves.
+            Grad-CAM++ for CNN feature channels alongside 14x14 patch-level self-attention gradient saliency maps
+            superimposed on specimens.
           </p>
         </div>
 

@@ -62,19 +62,19 @@ const steps: Step[] = [
   },
   {
     icon: Layers,
-    title: 'Model Architectures: Light vs. Deep',
+    title: 'Model Architectures: CNN vs. Vision Transformer',
     badge: 'Comparative Study',
     badgeColor: 'blue',
     content: (
       <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
         <p>
-          We benchmarked two complementary modern architectures: a lightweight mobile backbone
-          (<strong>EfficientNetV2-S</strong>) versus a large-capacity transformer-inspired convolutional network
-          (<strong>ConvNeXtBase</strong>).
+          We benchmarked two complementary modern deep learning paradigms: a lightweight convolutional mobile backbone
+          (<strong>EfficientNetV2-S</strong>) versus a full-capacity pretrained self-attention transformer
+          (<strong>ViT-B/16</strong>).
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-green-50/50 border border-green-200 rounded-2xl p-4 space-y-2">
-            <h4 className="font-bold text-green-900 text-sm">EfficientNetV2-S (Lightweight Champion)</h4>
+            <h4 className="font-bold text-green-900 text-sm">EfficientNetV2-S (Lightweight CNN)</h4>
             <ul className="space-y-1 text-xs text-slate-600">
               <li>• <strong>20.66M</strong> total parameters</li>
               <li>• <strong>83.04 MB</strong> model checkpoint</li>
@@ -83,14 +83,14 @@ const steps: Step[] = [
               <li>• GlobalAveragePooling2D → Dense(6) Softmax</li>
             </ul>
           </div>
-          <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-4 space-y-2">
-            <h4 className="font-bold text-blue-900 text-sm">ConvNeXtBase (Modern ConvNet)</h4>
+          <div className="bg-purple-50/50 border border-purple-200 rounded-2xl p-4 space-y-2">
+            <h4 className="font-bold text-purple-900 text-sm">ViT-B/16 (Vision Transformer)</h4>
             <ul className="space-y-1 text-xs text-slate-600">
-              <li>• <strong>87.83M</strong> total parameters</li>
-              <li>• <strong>338.0 MB</strong> model checkpoint</li>
-              <li>• 7x7 depthwise convolutions inspired by Swin Transformers</li>
-              <li>• LayerNorm and inverted bottleneck design</li>
-              <li>• GlobalAveragePooling2D → Dense(6) Softmax</li>
+              <li>• <strong>85.80M</strong> total parameters</li>
+              <li>• <strong>982.5 MB</strong> model checkpoint</li>
+              <li>• 12 Transformer layers, 12 attention heads, 768-dim</li>
+              <li>• 16×16 non-overlapping patch embeddings (196 tokens)</li>
+              <li>• Global self-attention eliminating background shortcut bias</li>
             </ul>
           </div>
         </div>
@@ -99,27 +99,27 @@ const steps: Step[] = [
   },
   {
     icon: Sparkles,
-    title: 'Explainable AI: Head-Propagation Grad-CAM',
+    title: 'Explainable AI: Grad-CAM++ & ViT Attention Saliency',
     badge: 'Visual Attribution',
     badgeColor: 'green',
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>
-          Gradient-weighted Class Activation Mapping (Grad-CAM) generates 2D activation heatmaps highlighting
-          the salient leaf areas influencing classification decisions:
+          Dual Explainable AI (XAI) pipelines visually verify the internal reasoning and decisive leaf regions
+          each network utilized to predict a given rice disease:
         </p>
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2 text-slate-600">
           <p>
-            <strong>Head-Propagation Tape:</strong> We watch feature activations coming out of the backbone convolutional
-            stage and propagate them through the classification head layers within a <code>tf.GradientTape</code>.
+            <strong>EfficientNet Grad-CAM++:</strong> Computes positive gradient activations weighted by higher-order
+            derivatives from the final convolutional stage, isolating sharp, pinpoint lesion borders.
           </p>
           <p>
-            <strong>Channel Weighting:</strong> Gradients of the predicted class score with respect to feature maps
-            are globally averaged to compute channel importance weights.
+            <strong>ViT Attention Saliency:</strong> Computes backpropagated input-gradient saliency grouped into
+            14×14 patch tokens, mapping the transformer's global self-attention across the whole blade of the leaf.
           </p>
           <p>
-            <strong>Colormap Superimposition:</strong> Heatmaps are clipped with ReLU, min-max normalized, resized
-            to leaf image resolution, and blended via OpenCV <code>COLORMAP_JET</code> at $\alpha=0.45$.
+            <strong>Colormap Superimposition:</strong> Heatmaps are min-max normalized, resized to leaf resolution,
+            and blended via OpenCV <code>COLORMAP_JET</code> at $\alpha=0.45$.
           </p>
         </div>
       </div>
@@ -133,8 +133,8 @@ const steps: Step[] = [
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>
-          Final model checkpoints were evaluated on the 570 unseen test samples. EfficientNetV2-S demonstrated
-          superior generalization with higher accuracy and F1 scores while consuming 4.1× less storage.
+          Final model checkpoints were evaluated on the 570 unseen test samples. ViT-B/16 achieved state-of-the-art
+          accuracy (97.72%) with robust lesion localization, while EfficientNetV2-S provided 11.8× lighter storage footprint.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs border border-slate-200 rounded-xl overflow-hidden">
@@ -142,24 +142,25 @@ const steps: Step[] = [
               <tr>
                 <th className="text-left px-3 py-2 text-slate-600 font-semibold">Metric</th>
                 <th className="text-right px-3 py-2 text-green-700 font-bold">EfficientNetV2-S</th>
-                <th className="text-right px-3 py-2 text-blue-700 font-bold">ConvNeXtBase</th>
+                <th className="text-right px-3 py-2 text-purple-700 font-bold">ViT-B/16 (Transformer)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {[
-                ['Test Accuracy', '92.81%', '90.18%'],
-                ['Macro Precision', '92.81%', '90.37%'],
-                ['Macro Recall', '92.76%', '90.12%'],
-                ['Macro F1 Score', '92.74%', '90.17%'],
-                ['ROC-AUC (OvR)', '0.9924', '0.9892'],
-                ['Total Parameters', '20.66 M', '87.83 M'],
-                ['Model File Size', '83.04 MB', '338.0 MB'],
-                ['Training Time', '30.13 min', '42.37 min'],
-              ].map(([k, eff, conv], i) => (
+                ['Test Accuracy', '95.26%', '97.72%'],
+                ['Macro Precision', '95.23%', '97.80%'],
+                ['Macro Recall', '95.22%', '97.70%'],
+                ['Macro F1 Score', '95.21%', '97.71%'],
+                ['ROC-AUC (OvR)', '0.9961', '0.9974'],
+                ['Total Parameters', '20.66 M', '85.80 M'],
+                ['Model File Size', '83.04 MB', '982.5 MB'],
+                ['Inference Latency', '14.88 ms', '7.64 ms'],
+                ['Throughput', '67.2 FPS', '130.8 FPS'],
+              ].map(([k, eff, vit], i) => (
                 <tr key={k} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
                   <td className="px-3 py-2 text-slate-700 font-medium">{k}</td>
                   <td className="px-3 py-2 text-right text-green-700 font-bold">{eff}</td>
-                  <td className="px-3 py-2 text-right text-blue-700 font-medium">{conv}</td>
+                  <td className="px-3 py-2 text-right text-purple-700 font-bold">{vit}</td>
                 </tr>
               ))}
             </tbody>
@@ -175,7 +176,7 @@ export default function Methodology() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       <SectionHeader
         title="Research Methodology & Explainable AI Pipeline"
-        subtitle="End-to-end experimental protocol from data audit to dual-model Grad-CAM feature visualization"
+        subtitle="End-to-end experimental protocol from data audit to dual-model CNN vs Vision Transformer XAI feature visualization"
       />
 
       <div className="space-y-6">

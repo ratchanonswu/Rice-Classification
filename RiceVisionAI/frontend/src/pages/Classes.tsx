@@ -42,7 +42,7 @@ export default function Classes() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       <SectionHeader
         title="Rice Disease Class Reference"
-        subtitle="Six authoritative pathology classes classified by EfficientNetV2-S and ConvNeXtBase"
+        subtitle="Six authoritative pathology classes classified by EfficientNetV2-S and ViT-B/16 (Vision Transformer)"
       />
 
       <div className="flex flex-col lg:flex-row gap-6">

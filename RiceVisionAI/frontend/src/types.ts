@@ -3,9 +3,9 @@
 export interface HealthResponse {
   status: string;
   efficientnetv2s_available: boolean;
-  convnextbase_available: boolean;
+  vit_base_available: boolean;
   efficientnetv2s_loaded: boolean;
-  convnextbase_loaded: boolean;
+  vit_base_loaded: boolean;
   active_models: string[];
 }
 
@@ -60,7 +60,7 @@ export interface ModelData {
 
 export interface ModelsResponse {
   efficientnetv2s: ModelData;
-  convnextbase: ModelData;
+  vit_base: ModelData;
 }
 
 export interface PerClassMetric {
@@ -76,7 +76,7 @@ export interface MetricsResponse {
     per_class: PerClassMetric[];
     confusion_matrix: Record<string, Record<string, number>>;
   };
-  convnextbase: {
+  vit_base: {
     per_class: PerClassMetric[];
     confusion_matrix: Record<string, Record<string, number>>;
   };
@@ -108,6 +108,6 @@ export interface PredictResponse {
   gradcam_raw?: string;
   // Fields present when mode === 'both'
   efficientnetv2s?: SinglePredictionResult;
-  convnextbase?: SinglePredictionResult;
+  vit_base?: SinglePredictionResult;
   disclaimer: string;
 }

@@ -38,46 +38,46 @@ export default function Comparison() {
   if (error) return <ErrorBanner message={error} />;
 
   const eff = models!.efficientnetv2s;
-  const conv = models!.convnextbase;
+  const vit = models!.vit_base;
 
   // Summary comparison rows
   const compRows = [
-    { label: 'Test Accuracy', eff: eff.metrics.accuracy, conv: conv.metrics.accuracy },
-    { label: 'Macro Precision', eff: eff.metrics.precision_macro, conv: conv.metrics.precision_macro },
-    { label: 'Macro Recall', eff: eff.metrics.recall_macro, conv: conv.metrics.recall_macro },
-    { label: 'Macro F1', eff: eff.metrics.f1_score_macro, conv: conv.metrics.f1_score_macro },
-    { label: 'ROC-AUC (macro)', eff: eff.metrics.roc_auc_macro, conv: conv.metrics.roc_auc_macro },
+    { label: 'Test Accuracy', eff: eff.metrics.accuracy, vit: vit.metrics.accuracy },
+    { label: 'Macro Precision', eff: eff.metrics.precision_macro, vit: vit.metrics.precision_macro },
+    { label: 'Macro Recall', eff: eff.metrics.recall_macro, vit: vit.metrics.recall_macro },
+    { label: 'Macro F1', eff: eff.metrics.f1_score_macro, vit: vit.metrics.f1_score_macro },
+    { label: 'ROC-AUC (macro)', eff: eff.metrics.roc_auc_macro, vit: vit.metrics.roc_auc_macro },
   ];
 
   const effRows = [
-    { label: 'Model Size (MB)', eff: eff.efficiency.model_file_size_mb, conv: conv.efficiency.model_file_size_mb, fmt: (v: number) => `${v} MB`, lowerBetter: true },
-    { label: 'Total Parameters', eff: eff.efficiency.total_parameters, conv: conv.efficiency.total_parameters, fmt: (v: number) => v.toLocaleString(), lowerBetter: true },
-    { label: 'Training Time (min)', eff: eff.efficiency.training_time_minutes, conv: conv.efficiency.training_time_minutes, fmt: (v: number) => `${v.toFixed(2)} min`, lowerBetter: true },
-    { label: 'Avg Inference (ms)', eff: eff.efficiency.inference_latency.average_inference_time_ms, conv: conv.efficiency.inference_latency.average_inference_time_ms, fmt: (v: number) => `${v.toFixed(1)} ms`, lowerBetter: true },
-    { label: 'Throughput (FPS)', eff: eff.efficiency.inference_latency.throughput_fps, conv: conv.efficiency.inference_latency.throughput_fps, fmt: (v: number) => `${v.toFixed(1)} fps`, lowerBetter: false },
+    { label: 'Model Size (MB)', eff: eff.efficiency.model_file_size_mb, vit: vit.efficiency.model_file_size_mb, fmt: (v: number) => `${v} MB`, lowerBetter: true },
+    { label: 'Total Parameters', eff: eff.efficiency.total_parameters, vit: vit.efficiency.total_parameters, fmt: (v: number) => v.toLocaleString(), lowerBetter: true },
+    { label: 'Training Time (min)', eff: eff.efficiency.training_time_minutes, vit: vit.efficiency.training_time_minutes, fmt: (v: number) => `${v.toFixed(2)} min`, lowerBetter: true },
+    { label: 'Avg Inference (ms)', eff: eff.efficiency.inference_latency.average_inference_time_ms, vit: vit.efficiency.inference_latency.average_inference_time_ms, fmt: (v: number) => `${v.toFixed(2)} ms`, lowerBetter: true },
+    { label: 'Throughput (FPS)', eff: eff.efficiency.inference_latency.throughput_fps, vit: vit.efficiency.inference_latency.throughput_fps, fmt: (v: number) => `${v.toFixed(1)} fps`, lowerBetter: false },
   ];
 
   // Per-class bar chart data
   const perClassData = metrics!.class_names.map((cls) => {
     const effCls = metrics!.efficientnetv2s.per_class.find((r) => r.class === cls);
-    const convCls = metrics!.convnextbase.per_class.find((r) => r.class === cls);
+    const vitCls = metrics!.vit_base.per_class.find((r) => r.class === cls);
     return {
       class: CLASS_ABBR[cls] || cls,
       fullName: cls,
       'EfficientNetV2-S': effCls ? +(effCls.f1_score * 100).toFixed(1) : 0,
-      ConvNeXtBase: convCls ? +(convCls.f1_score * 100).toFixed(1) : 0,
+      'ViT-B/16': vitCls ? +(vitCls.f1_score * 100).toFixed(1) : 0,
     };
   });
 
   // Radar chart data
-  const radarData = compRows.map(({ label, eff: e, conv: c }) => ({
+  const radarData = compRows.map(({ label, eff: e, vit: v }) => ({
     metric: label.replace('Macro ', '').replace(' (macro)', ''),
     'EfficientNetV2-S': +(e * 100).toFixed(2),
-    ConvNeXtBase: +(c * 100).toFixed(2),
+    'ViT-B/16': +(v * 100).toFixed(2),
   }));
 
   // Confusion matrix renderer
-  const ConfusionMatrix = ({ modelKey, label }: { modelKey: 'efficientnetv2s' | 'convnextbase'; label: string }) => {
+  const ConfusionMatrix = ({ modelKey, label }: { modelKey: 'efficientnetv2s' | 'vit_base'; label: string }) => {
     const cm = metrics![modelKey].confusion_matrix;
     const classNames = metrics!.class_names;
     if (!cm || Object.keys(cm).length === 0) return <p className="text-slate-400 text-sm">No confusion matrix data.</p>;
@@ -143,7 +143,7 @@ export default function Comparison() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       <SectionHeader
         title="Head-to-Head Model Benchmark"
-        subtitle="Rigorous empirical comparison between EfficientNetV2-S (Lightweight Champion) and ConvNeXtBase (Modern ConvNet)"
+        subtitle="Empirical comparison between EfficientNetV2-S (Lightweight CNN) and ViT-B/16 (Vision Transformer)"
       />
 
       {/* Tabs */}
@@ -171,26 +171,26 @@ export default function Comparison() {
           {/* Key Metric Highlights */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
-              label="EfficientNetV2-S Acc"
-              value={PCT(eff.metrics.accuracy)}
-              sub="Champion Model (+2.63%)"
+              label="ViT-B/16 Test Acc"
+              value={PCT(vit.metrics.accuracy)}
+              sub="Transformer Leader (+2.46%)"
               accent
             />
             <StatCard
-              label="ConvNeXtBase Acc"
-              value={PCT(conv.metrics.accuracy)}
-              sub="Modern ConvNet Baseline"
+              label="EfficientNetV2-S Acc"
+              value={PCT(eff.metrics.accuracy)}
+              sub="Lightweight CNN Baseline"
             />
             <StatCard
               label="Model Size Gap"
-              value="4.1x Smaller"
-              sub="83 MB vs 338 MB"
+              value="11.8x Lighter"
+              sub="83 MB vs 982 MB"
               accent
             />
             <StatCard
-              label="Parameter Ratio"
-              value="4.25x Fewer"
-              sub="20.7M vs 87.8M params"
+              label="ViT Throughput"
+              value="130.8 FPS"
+              sub="Sub-8ms Latency on GPU"
             />
           </div>
 
@@ -207,20 +207,20 @@ export default function Comparison() {
                     <tr className="border-b border-slate-200 text-slate-500 text-left">
                       <th className="py-2.5 font-semibold">Metric</th>
                       <th className="py-2.5 font-bold text-green-800 text-right">EfficientNetV2-S</th>
-                      <th className="py-2.5 font-bold text-blue-800 text-right">ConvNeXtBase</th>
+                      <th className="py-2.5 font-bold text-purple-800 text-right">ViT-B/16</th>
                       <th className="py-2.5 font-semibold text-slate-500 text-right">Difference</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {compRows.map((r) => {
-                      const diff = r.eff - r.conv;
+                      const diff = r.vit - r.eff;
                       return (
                         <tr key={r.label} className="hover:bg-slate-50/60">
                           <td className="py-2.5 font-medium text-slate-700">{r.label}</td>
                           <td className="py-2.5 font-bold text-green-700 text-right">{PCT(r.eff)}</td>
-                          <td className="py-2.5 font-medium text-blue-700 text-right">{PCT(r.conv)}</td>
-                          <td className="py-2.5 font-mono text-right font-semibold text-green-600">
-                            +{PCT(diff)}
+                          <td className="py-2.5 font-bold text-purple-700 text-right">{PCT(r.vit)}</td>
+                          <td className="py-2.5 font-mono text-right font-semibold text-purple-600">
+                            +{PCT(diff)} (ViT)
                           </td>
                         </tr>
                       );
@@ -237,9 +237,9 @@ export default function Comparison() {
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="#e2e8f0" />
                   <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <PolarRadiusAxis domain={[85, 100]} tick={{ fontSize: 9 }} />
+                  <PolarRadiusAxis domain={[90, 100]} tick={{ fontSize: 9 }} />
                   <Radar name="EfficientNetV2-S" dataKey="EfficientNetV2-S" stroke="#16a34a" fill="#16a34a" fillOpacity={0.3} />
-                  <Radar name="ConvNeXtBase" dataKey="ConvNeXtBase" stroke="#2563eb" fill="#2563eb" fillOpacity={0.2} />
+                  <Radar name="ViT-B/16" dataKey="ViT-B/16" stroke="#9333ea" fill="#9333ea" fillOpacity={0.25} />
                   <Legend />
                   <Tooltip />
                 </RadarChart>
@@ -259,23 +259,23 @@ export default function Comparison() {
                   <tr className="border-b border-slate-200 text-slate-500 text-left">
                     <th className="py-2.5 font-semibold">Parameter</th>
                     <th className="py-2.5 font-bold text-green-800 text-right">EfficientNetV2-S</th>
-                    <th className="py-2.5 font-bold text-blue-800 text-right">ConvNeXtBase</th>
+                    <th className="py-2.5 font-bold text-purple-800 text-right">ViT-B/16</th>
                     <th className="py-2.5 font-semibold text-slate-500 text-right">Efficiency Winner</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {effRows.map((r) => {
-                    const effWins = r.lowerBetter ? r.eff < r.conv : r.eff > r.conv;
+                    const effWins = r.lowerBetter ? r.eff < r.vit : r.eff > r.vit;
                     return (
                       <tr key={r.label} className="hover:bg-slate-50/60">
                         <td className="py-2.5 font-medium text-slate-700">{r.label}</td>
                         <td className="py-2.5 font-semibold text-slate-900 text-right">{r.fmt(r.eff)}</td>
-                        <td className="py-2.5 font-medium text-slate-600 text-right">{r.fmt(r.conv)}</td>
+                        <td className="py-2.5 font-medium text-slate-600 text-right">{r.fmt(r.vit)}</td>
                         <td className="py-2.5 text-right">
                           <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                            effWins ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                            effWins ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
                           }`}>
-                            {effWins ? 'EfficientNetV2-S' : 'ConvNeXtBase'}
+                            {effWins ? 'EfficientNetV2-S' : 'ViT-B/16'}
                           </span>
                         </td>
                       </tr>
@@ -297,11 +297,11 @@ export default function Comparison() {
               <BarChart data={perClassData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="class" tick={{ fontSize: 11 }} />
-                <YAxis domain={[80, 100]} tick={{ fontSize: 11 }} unit="%" />
+                <YAxis domain={[85, 100]} tick={{ fontSize: 11 }} unit="%" />
                 <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
                 <Legend />
                 <Bar dataKey="EfficientNetV2-S" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="ConvNeXtBase" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="ViT-B/16" fill="#9333ea" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -309,7 +309,7 @@ export default function Comparison() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {metrics!.class_names.map((cls) => {
               const effCls = metrics!.efficientnetv2s.per_class.find((r) => r.class === cls);
-              const convCls = metrics!.convnextbase.per_class.find((r) => r.class === cls);
+              const vitCls = metrics!.vit_base.per_class.find((r) => r.class === cls);
               return (
                 <div key={cls} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
                   <div className="flex items-center justify-between">
@@ -320,17 +320,17 @@ export default function Comparison() {
                     <div>
                       <span className="text-slate-400 block text-[10px]">Precision</span>
                       <strong className="text-green-700">{PCT1(effCls?.precision ?? 0)}</strong>
-                      <span className="text-slate-400 text-[10px] block">vs {PCT1(convCls?.precision ?? 0)}</span>
+                      <span className="text-slate-400 text-[10px] block">vs <strong className="text-purple-700">{PCT1(vitCls?.precision ?? 0)}</strong></span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Recall</span>
                       <strong className="text-green-700">{PCT1(effCls?.recall ?? 0)}</strong>
-                      <span className="text-slate-400 text-[10px] block">vs {PCT1(convCls?.recall ?? 0)}</span>
+                      <span className="text-slate-400 text-[10px] block">vs <strong className="text-purple-700">{PCT1(vitCls?.recall ?? 0)}</strong></span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">F1 Score</span>
                       <strong className="text-green-700">{PCT1(effCls?.f1_score ?? 0)}</strong>
-                      <span className="text-slate-400 text-[10px] block">vs {PCT1(convCls?.f1_score ?? 0)}</span>
+                      <span className="text-slate-400 text-[10px] block">vs <strong className="text-purple-700">{PCT1(vitCls?.f1_score ?? 0)}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -344,7 +344,7 @@ export default function Comparison() {
       {activeTab === 'confusion' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ConfusionMatrix modelKey="efficientnetv2s" label="EfficientNetV2-S" />
-          <ConfusionMatrix modelKey="convnextbase" label="ConvNeXtBase" />
+          <ConfusionMatrix modelKey="vit_base" label="ViT-B/16 (Vision Transformer)" />
         </div>
       )}
     </div>
