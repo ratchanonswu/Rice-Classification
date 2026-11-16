@@ -1,7 +1,7 @@
 """
-RiceVision AI — Streamlit Deployment App (Styled to match RiceVision AI React UI)
-Supports both EfficientNetV2-S (Grad-CAM++) and ViT-B/16 (14x14 Attention Saliency)
-alongside benchmark comparison, disease reference, and methodology documentation.
+RiceVision AI — Phytopathology Diagnostic Bench & Benchmark Observatory
+Editorial scientific interface for comparing EfficientNetV2-S (Grad-CAM++)
+and ViT-B/16 (14×14 Patch Attention Saliency) on 3,798 audited rice leaf specimens.
 """
 import base64
 import csv
@@ -62,8 +62,7 @@ except Exception:
 # ─── Page Config & Constants ──────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="RiceVision AI — EfficientNetV2-S vs. ViT-B/16",
-    page_icon="🌾",
+    page_title="RiceVision AI — Phytopathology Benchmark & XAI Bench",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -96,179 +95,294 @@ CLASS_ABBR = {
 
 DISEASE_INFO = {
     "Bacterial Leaf Blight": {
-        "desc": "A devastating bacterial disease caused by Xanthomonas oryzae pv. oryzae.",
-        "symptoms": "Water-soaked to yellowish stripes along leaf margins progressing inward, turning gray-white with wavy edges.",
-        "management": "Use certified disease-free seed, maintain balanced nitrogen, avoid excess standing water, and apply copper-based bactericides.",
+        "pathogen": "Xanthomonas oryzae pv. oryzae",
+        "desc": "Vascular bacterial infection prevalent in irrigated and rainfed lowland rice canopies.",
+        "symptoms": "Water-soaked yellowish stripes along leaf margins progressing inward into gray-white necrotic blades with wavy edges.",
+        "management": "Deploy resistant cultivars, maintain balanced nitrogen split applications, avoid field flooding, and apply copper bactericides.",
     },
     "Brown Spot": {
-        "desc": "A prevalent fungal pathogen caused by Cochliobolus miyabeanus (Bipolaris oryzae).",
-        "symptoms": "Round to oval brown spots with yellow halos; severe attacks cause seedling blight and unfilled grains.",
-        "management": "Improve soil fertility (adequate potassium and silicon), use hot-water seed treatment (53-54°C for 10 min), and apply propiconazole if needed.",
+        "pathogen": "Cochliobolus miyabeanus (Bipolaris oryzae)",
+        "desc": "Foliar and seed-borne fungal pathogen associated with potassium- and silicon-deficient soils.",
+        "symptoms": "Oval dark-brown necrotic lesions surrounded by chlorotic yellow halos; severe infection causes unfilled panicles.",
+        "management": "Restore soil potassium and silicon fertility, apply hot-water seed treatment (53–54°C, 10 min), and spray propiconazole.",
     },
     "Healthy Rice Leaf": {
-        "desc": "Clean, uninfected foliage displaying vigorous uniform green coloration.",
-        "symptoms": "Intact leaf blades, no necrotic spotting, water-soaking, or fungal sporulation.",
-        "management": "Maintain recommended crop spacing, optimal water management, and scout regularly.",
+        "pathogen": "Uninfected Oryza sativa specimen",
+        "desc": "Clean foliar tissue exhibiting uniform chlorophyll density and intact epidermal margins.",
+        "symptoms": "Unbroken leaf blades free of necrotic spotting, water-soaking, chlorotic striping, or fungal sporulation.",
+        "management": "Maintain recommended hill spacing, intermittent irrigation, and routine canopy scouting to avoid unnecessary fungicide sprays.",
     },
     "Leaf Blast": {
-        "desc": "One of the most destructive rice fungal diseases worldwide, caused by Magnaporthe oryzae.",
-        "symptoms": "Spindle-shaped or diamond-shaped lesions with grayish centers and dark brown margins.",
-        "management": "Plant resistant cultivars, avoid excessive split nitrogen fertilizer, and apply preventive tricyclazole or azoxystrobin.",
+        "pathogen": "Magnaporthe oryzae",
+        "desc": "High-consequence airborne fungal disease capable of rapid canopy destruction under high humidity.",
+        "symptoms": "Spindle- or diamond-shaped lesions with pale gray sporulating centers and dark reddish-brown necrotic borders.",
+        "management": "Plant blast-resistant lines, avoid excessive nitrogen top-dressing, maintain flood depth, and apply tricyclazole or azoxystrobin.",
     },
     "Leaf Scald": {
-        "desc": "Caused by the fungal pathogen Microdochium oryzae (Gerlachia oryzae).",
-        "symptoms": "Zonate brown lesions beginning at leaf tips and margins with alternating light and dark brown bands.",
-        "management": "Crop rotation, seed dressing with carbendazim or thiram, destruction of stubble, and timely fungicide application.",
+        "pathogen": "Microdochium oryzae (Gerlachia oryzae)",
+        "desc": "Fungal blight affecting mature leaves under dense canopy closure and heavy wet-season rainfall.",
+        "symptoms": "Zonate oblong lesions initiating at leaf tips or margins with alternating light-tan and dark-brown bands.",
+        "management": "Treat seeds with carbendazim, incorporate crop residue after harvest, avoid high seeding density, and apply benomyl.",
     },
     "Sheath Blight": {
-        "desc": "Soil-borne fungal disease caused by Rhizoctonia solani AG-1 IA.",
-        "symptoms": "Oval or irregular greenish-gray water-soaked spots on leaf sheaths enlarging into snake-skin patterns.",
-        "management": "Avoid dense transplanting, drain excess water periodically to lower canopy humidity, and spray validamycin or azoxystrobin.",
+        "pathogen": "Rhizoctonia solani AG-1 IA",
+        "desc": "Soil-borne sclerotial fungus initiating near the waterline and climbing the upper foliar canopy.",
+        "symptoms": "Irregular greenish-gray water-soaked lesions coalescing into characteristic snake-skin banding with brown margins.",
+        "management": "Optimize plant spacing, drain paddies mid-season to reduce canopy humidity, and apply validamycin at early booting.",
     },
 }
 
 DISCLAIMER = (
-    "Predictions, Grad-CAM++, and ViT Attention Saliency heatmaps are deep learning research outputs "
-    "intended for decision-support and should be verified with qualified agronomists before field treatment."
+    "Predictions, Grad-CAM++, and ViT 14×14 Attention Saliency maps are research outputs intended for "
+    "agronomic decision-support. Confirm field diagnoses with certified plant pathologists before treatment."
 )
 
-# ─── Custom CSS (Matching RiceVision AI React + Tailwind UI) ──────────────────
+LEAF_MARK_SVG = """
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="28" height="28" rx="7" fill="#143323"/>
+  <path d="M7.5 20.5C7.5 13.5 12.5 7.5 20.5 7.5C20.5 15.5 14.5 20.5 7.5 20.5Z" stroke="#A7F3D0" stroke-width="1.75" stroke-linejoin="round"/>
+  <path d="M7.5 20.5L16.5 11.5" stroke="#A7F3D0" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
+"""
+
+# ─── Custom Editorial Scientific Styling ──────────────────────────────────────
 
 st.markdown(
     """
     <style>
-    /* Clean background & layout */
-    .stApp {
-        background-color: #f8fafc;
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+    :root {
+        --bg-paper: #F7F6F2;
+        --bg-surface: #FFFFFF;
+        --bg-subtle: #EFECE6;
+        --ink-primary: #14261C;
+        --ink-secondary: #3D5245;
+        --ink-muted: #5C6E63;
+        --rule-hairline: #DDD9D0;
+        --eff-green: #1B5E3A;
+        --eff-surface: #F1F7F3;
+        --eff-border: #B8D8C5;
+        --vit-violet: #5B2E91;
+        --vit-surface: #F6F2FA;
+        --vit-border: #D4C2EC;
     }
+
+    ::selection {
+        background: #1B5E3A;
+        color: #FFFFFF;
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: var(--bg-paper);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #C5C0B5;
+        border-radius: 4px;
+    }
+
+    .stApp {
+        background-color: var(--bg-paper);
+        color: var(--ink-primary);
+        font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-variant-numeric: tabular-nums;
+    }
+
     .block-container {
         padding-top: 1.5rem;
-        padding-bottom: 3rem;
-        max-width: 1240px;
+        padding-bottom: 3.5rem;
+        max-width: 1260px;
     }
+
     header[data-testid="stHeader"] {
-        background: rgba(255,255,255,0.85);
+        background: rgba(247, 246, 242, 0.88);
         backdrop-filter: blur(8px);
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid var(--rule-hairline);
     }
     #MainMenu, footer {visibility: hidden;}
 
-    /* Hero Banner */
-    .rv-hero {
-        background: linear-gradient(135deg, #14532d 0%, #15803d 55%, #166534 100%);
-        color: white;
-        padding: 2rem 2.25rem;
-        border-radius: 1.25rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 25px -5px rgba(21, 128, 61, 0.22);
-    }
-    .rv-badge {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.16);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: #dcfce7;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        margin-bottom: 0.75rem;
-    }
-    .rv-hero h1 {
-        color: white !important;
-        font-size: 1.95rem !important;
-        font-weight: 800 !important;
-        margin: 0 0 0.5rem 0 !important;
-        line-height: 1.2 !important;
-    }
-    .rv-hero p {
-        color: #dcfce7;
-        font-size: 0.96rem;
-        margin: 0;
-        max-width: 780px;
-        line-height: 1.55;
+    h1, h2, h3, .rv-serif {
+        font-family: 'Newsreader', Georgia, serif !important;
+        letter-spacing: -0.02em;
+        color: var(--ink-primary) !important;
+        font-weight: 500 !important;
     }
 
-    /* Stat Cards */
-    .rv-stat {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        padding: 1.1rem 1.25rem;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-    }
-    .rv-stat-accent {
-        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
-        border: 1px solid #bbf7d0;
-    }
-    .rv-stat-purple {
-        background: linear-gradient(180deg, #faf5ff 0%, #ffffff 100%);
-        border: 1px solid #e9d5ff;
-    }
-    .rv-stat-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-    .rv-stat-value {
-        font-size: 1.65rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin: 0.2rem 0;
-    }
-    .rv-stat-sub {
-        font-size: 0.78rem;
-        color: #475569;
+    .rv-mono {
+        font-family: 'IBM Plex Mono', monospace;
+        font-variant-numeric: tabular-nums;
     }
 
-    /* Model Summary Cards */
-    .rv-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        padding: 1.25rem 1.4rem;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-        margin-bottom: 1rem;
+    /* Masthead */
+    .rv-masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0.9rem;
+        margin-bottom: 1.25rem;
+        border-bottom: 1px solid var(--rule-hairline);
     }
-    .rv-card-green {
-        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 45%);
-        border: 1px solid #bbf7d0;
+    .rv-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
-    .rv-card-purple {
-        background: linear-gradient(180deg, #faf5ff 0%, #ffffff 45%);
-        border: 1px solid #e9d5ff;
+    .rv-brand-title {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 1.55rem;
+        line-height: 1.05;
+        color: var(--ink-primary);
+        letter-spacing: -0.02em;
     }
-    .rv-pill-green {
-        display: inline-block;
-        background: #dcfce7;
-        color: #166534;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 0.15rem 0.55rem;
-        border-radius: 9999px;
-    }
-    .rv-pill-purple {
-        display: inline-block;
-        background: #f3e8ff;
-        color: #6b21a8;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 0.15rem 0.55rem;
-        border-radius: 9999px;
+    .rv-brand-sub {
+        font-size: 0.76rem;
+        color: var(--ink-secondary);
     }
 
-    /* Top Nav Radio as clean segmented pills */
+    /* Segmented Navigation */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
-        background: #ffffff;
-        padding: 0.35rem;
-        border-radius: 0.9rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-        justify-content: center;
+        background: var(--bg-surface);
+        padding: 0.3rem 0.45rem;
+        border-radius: 10px;
+        border: 1px solid var(--rule-hairline);
         gap: 0.35rem;
+    }
+
+    /* Editorial Lead */
+    .rv-lead-box {
+        background: var(--bg-surface);
+        border: 1px solid var(--rule-hairline);
+        border-radius: 14px;
+        padding: 2rem 2.25rem;
+        margin-bottom: 1.25rem;
+    }
+    .rv-lead-title {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 2.55rem;
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+        color: var(--ink-primary);
+        margin: 0 0 0.75rem 0;
+        max-width: 28ch;
+    }
+    .rv-lead-copy {
+        font-size: 0.96rem;
+        line-height: 1.65;
+        color: var(--ink-secondary);
+        max-width: 70ch;
+        margin: 0;
+    }
+
+    /* Unified Benchmark Ledger Strip */
+    .rv-ledger {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: var(--bg-surface);
+        border: 1px solid var(--rule-hairline);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    .rv-ledger-cell {
+        padding: 1.15rem 1.35rem;
+        border-right: 1px solid var(--rule-hairline);
+    }
+    .rv-ledger-cell:last-child {
+        border-right: none;
+    }
+    .rv-ledger-val {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: var(--ink-primary);
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+    }
+    .rv-ledger-val-green { color: var(--eff-green); }
+    .rv-ledger-val-violet { color: var(--vit-violet); }
+    .rv-ledger-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ink-primary);
+        margin-top: 0.3rem;
+    }
+    .rv-ledger-note {
+        font-size: 0.76rem;
+        color: var(--ink-muted);
+        margin-top: 0.1rem;
+    }
+
+    /* Architecture Dossiers */
+    .rv-dossier {
+        background: var(--bg-surface);
+        border: 1px solid var(--rule-hairline);
+        border-radius: 14px;
+        padding: 1.5rem 1.65rem;
+        height: 100%;
+    }
+    .rv-dossier-eff {
+        background: var(--eff-surface);
+        border-color: var(--eff-border);
+    }
+    .rv-dossier-vit {
+        background: var(--vit-surface);
+        border-color: var(--vit-border);
+    }
+    .rv-dossier h3 {
+        font-size: 1.55rem !important;
+        margin: 0 0 0.4rem 0 !important;
+    }
+    .rv-dossier p {
+        font-size: 0.9rem;
+        line-height: 1.55;
+        color: var(--ink-secondary);
+        max-width: 65ch;
+        margin: 0 0 1rem 0;
+    }
+    .rv-spec-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.45rem 0;
+        border-top: 1px solid rgba(20, 38, 28, 0.09);
+        font-size: 0.83rem;
+    }
+    .rv-spec-key { color: var(--ink-secondary); font-weight: 500; }
+    .rv-spec-val {
+        font-family: 'IBM Plex Mono', monospace;
+        color: var(--ink-primary);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Callout Banners */
+    .rv-banner-consensus {
+        background: var(--eff-surface);
+        border: 1px solid var(--eff-border);
+        color: var(--ink-primary);
+        padding: 0.85rem 1.15rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        margin: 0.75rem 0 1rem 0;
+    }
+    .rv-banner-divergence {
+        background: #FDF6EC;
+        border: 1px solid #E9D2B0;
+        color: #4A3212;
+        padding: 0.85rem 1.15rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        margin: 0.75rem 0 1rem 0;
+    }
+
+    /* Bordered containers refinement */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: var(--bg-surface);
+        border: 1px solid var(--rule-hairline) !important;
+        border-radius: 14px !important;
     }
     </style>
     """,
@@ -334,7 +448,7 @@ def load_model_cached(model_key: str) -> Any:
     if not ckpt.exists():
         raise FileNotFoundError(
             f"Model checkpoint not found: {ckpt.name}. "
-            "Upload it to Hugging Face Hub and set VIT_MODEL_URL in Streamlit Secrets, or run EfficientNetV2-S Only."
+            "Set VIT_MODEL_URL in Streamlit Secrets or select EfficientNetV2-S Only."
         )
     return tf.keras.models.load_model(str(ckpt), compile=False)
 
@@ -431,7 +545,7 @@ def run_inference(pil_img: Image.Image, model_key: str, alpha: float) -> Dict[st
         xai_method = "Grad-CAM++"
     else:
         heatmap = compute_vit_saliency(tf.convert_to_tensor(tensor), model)
-        xai_method = "Attention Saliency (14×14 Patches)"
+        xai_method = "Attention Saliency (14×14)"
 
     overlay_img, raw_hm_img = make_heatmap_images(resized, heatmap, alpha=alpha)
     return {
@@ -452,98 +566,113 @@ def b64_to_pil(data_url: str) -> Image.Image:
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
 
 
-def render_stat_card(label: str, value: str, sub: str, variant: str = "default") -> str:
-    cls = "rv-stat"
-    if variant == "green":
-        cls += " rv-stat-accent"
-    elif variant == "purple":
-        cls += " rv-stat-purple"
-    return (
-        f'<div class="{cls}">'
-        f'<div class="rv-stat-label">{label}</div>'
-        f'<div class="rv-stat-value">{value}</div>'
-        f'<div class="rv-stat-sub">{sub}</div>'
-        f'</div>'
+def style_plotly(fig: go.Figure, height: int = 240) -> go.Figure:
+    fig.update_layout(
+        height=height,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Source Sans 3, sans-serif", color="#14261C", size=12),
+        margin=dict(l=6, r=14, t=24, b=10),
     )
+    fig.update_xaxes(gridcolor="#E6E4DD", zerolinecolor="#E6E4DD")
+    fig.update_yaxes(gridcolor="#E6E4DD", zerolinecolor="#E6E4DD")
+    return fig
 
 
-# ─── Sidebar (System / RAM Utilities) ─────────────────────────────────────────
+# ─── Sidebar (Runtime Memory Control) ─────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### ⚙️ Runtime Status")
-    st.write(f"• EfficientNetV2-S (`83.0 MB`): {'✅ Ready' if EFFNET_CHECKPOINT.exists() else '❌ Missing'}")
-    st.write(f"• ViT-B/16 (`982.5 MB`): {'✅ Ready' if VIT_CHECKPOINT.exists() else '❌ Missing'}")
-    if st.button("🧹 Free Model RAM Cache", use_container_width=True):
+    st.markdown("### Runtime Checkpoints")
+    st.write(f"EfficientNetV2-S (83.0 MB): {'Ready' if EFFNET_CHECKPOINT.exists() else 'Missing'}")
+    st.write(f"ViT-B/16 (982.5 MB): {'Ready' if VIT_CHECKPOINT.exists() else 'Remote HF Hub'}")
+    if st.button("Release Cached Models from RAM", use_container_width=True):
         load_model_cached.clear()
         tf.keras.backend.clear_session()
         gc.collect()
-        st.success("Cleared cached models from RAM.")
+        st.success("Cleared model weights from memory.")
 
 
-# ─── Top Navigation Bar (Matching React Navbar) ───────────────────────────────
+# ─── Masthead & Top Navigation ────────────────────────────────────────────────
 
-nav_col1, nav_col2 = st.columns([1.2, 3.8])
+nav_col1, nav_col2 = st.columns([1.35, 3.65])
 with nav_col1:
     st.markdown(
-        '<div style="display:flex;align-items:center;gap:0.5rem;padding-top:0.35rem;">'
-        '<span style="font-size:1.5rem;">🌾</span>'
-        '<div><div style="font-weight:800;font-size:1.05rem;color:#14532d;line-height:1.1;">RiceVision AI</div>'
-        '<div style="font-size:0.72rem;color:#64748b;">EfficientNetV2-S vs. ViT-B/16</div></div>'
-        '</div>',
+        f'<div class="rv-brand" style="padding-top:0.2rem;">'
+        f'{LEAF_MARK_SVG}'
+        f'<div><div class="rv-brand-title">RiceVision AI</div>'
+        f'<div class="rv-brand-sub">EfficientNetV2-S &amp; ViT-B/16 Phytopathology Bench</div></div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 with nav_col2:
     page = st.radio(
-        "Navigation",
-        ["🏠 Overview", "📊 Comparison", "🌱 Classes", "🔬 Predict & XAI", "🧪 Methodology"],
+        "Section",
+        ["Overview", "Benchmark", "Pathology Atlas", "Diagnostic Bench", "Methodology"],
         index=3,
         horizontal=True,
         label_visibility="collapsed",
     )
 
-st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+st.markdown('<hr style="border:none;border-top:1px solid #DDD9D0;margin:0.5rem 0 1.5rem 0;"/>', unsafe_allow_html=True)
 
 
 # ─── Pages ────────────────────────────────────────────────────────────────────
 
-if page == "🏠 Overview":
+if page == "Overview":
     st.markdown(
         """
-        <div class="rv-hero">
-            <div class="rv-badge">Zero-Leakage SHA-256 + pHash Benchmark • Explainable AI</div>
-            <h1>Rice Leaf Disease Classification:<br/>EfficientNetV2-S vs. Vision Transformer (ViT-B/16)</h1>
-            <p>
-                Controlled empirical benchmark comparing a lightweight convolutional backbone against a global
-                self-attention Vision Transformer across 3,798 deduplicated leaf specimens and 6 disease classes,
-                instrumented with Grad-CAM++ and 14×14 Attention Saliency.
+        <div class="rv-lead-box">
+            <h1 class="rv-lead-title">Foliar Rice Disease Classification Across Convolutional and Self-Attention Architectures</h1>
+            <p class="rv-lead-copy">
+                A controlled empirical study evaluating a lightweight mobile convolutional network
+                (<strong>EfficientNetV2-S</strong>) against a global self-attention Vision Transformer
+                (<strong>ViT-B/16</strong>) on 3,798 cryptographic and perceptual hash–deduplicated
+                rice leaf specimens across six disease classes, verified with pre-softmax Grad-CAM++
+                and 14×14 patch input-gradient saliency.
             </p>
+        </div>
+
+        <div class="rv-ledger">
+            <div class="rv-ledger-cell">
+                <div class="rv-ledger-val rv-ledger-val-violet">97.72%</div>
+                <div class="rv-ledger-name">ViT-B/16 Test Accuracy</div>
+                <div class="rv-ledger-note">+2.46% over CNN baseline (570 test leaves)</div>
+            </div>
+            <div class="rv-ledger-cell">
+                <div class="rv-ledger-val rv-ledger-val-green">95.26%</div>
+                <div class="rv-ledger-name">EfficientNetV2-S Accuracy</div>
+                <div class="rv-ledger-note">83.04 MB checkpoint (11.8× lighter)</div>
+            </div>
+            <div class="rv-ledger-cell">
+                <div class="rv-ledger-val">130.8 FPS</div>
+                <div class="rv-ledger-name">ViT-B/16 GPU Throughput</div>
+                <div class="rv-ledger-note">7.64 ms/image vs. 14.88 ms on CNN</div>
+            </div>
+            <div class="rv-ledger-cell">
+                <div class="rv-ledger-val">3,798</div>
+                <div class="rv-ledger-name">Zero-Leakage Specimens</div>
+                <div class="rv-ledger-note">31 SHA-256 duplicates removed • 67 pHash groups</div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(render_stat_card("ViT-B/16 Test Acc", "97.72%", "Transformer Leader (+2.46%)", "purple"), unsafe_allow_html=True)
-    c2.markdown(render_stat_card("EfficientNetV2-S Acc", "95.26%", "Lightweight CNN Baseline", "green"), unsafe_allow_html=True)
-    c3.markdown(render_stat_card("Model Size Gap", "11.8× Lighter", "83.04 MB vs 982.52 MB", "green"), unsafe_allow_html=True)
-    c4.markdown(render_stat_card("ViT GPU Throughput", "130.8 FPS", "7.64 ms / image on GPU", "purple"), unsafe_allow_html=True)
-
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown(
             """
-            <div class="rv-card rv-card-green">
-                <span class="rv-pill-green">Lightweight CNN</span>
-                <h3 style="margin:0.5rem 0 0.4rem 0;color:#14532d;">EfficientNetV2-S</h3>
-                <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem;">
-                    Fused-MBConv convolutional backbone optimized for compact deployment and low RAM footprints.
+            <div class="rv-dossier rv-dossier-eff">
+                <h3>EfficientNetV2-S</h3>
+                <p>
+                    Fused-MBConv convolutional architecture optimized for edge deployment and low memory overhead,
+                    isolating sharp local necrotic lesion boundaries.
                 </p>
-                <ul style="font-size:0.85rem;color:#334155;margin:0;padding-left:1.2rem;">
-                    <li><strong>Test Accuracy:</strong> 95.26% &nbsp;|&nbsp; <strong>Macro F1:</strong> 95.21% &nbsp;|&nbsp; <strong>ROC-AUC:</strong> 99.61%</li>
-                    <li><strong>Checkpoint:</strong> 83.04 MB (20,660,838 parameters)</li>
-                    <li><strong>XAI Attribution:</strong> Pre-softmax Grad-CAM++ (Chattopadhay et al., 2018)</li>
-                </ul>
+                <div class="rv-spec-row"><span class="rv-spec-key">Test Accuracy / Macro F1</span><span class="rv-spec-val">95.26% / 95.21%</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Macro Precision / Recall</span><span class="rv-spec-val">95.23% / 95.22%</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">ROC-AUC (One-vs-Rest)</span><span class="rv-spec-val">0.9961</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Parameters &amp; Size</span><span class="rv-spec-val">20,660,838 • 83.04 MB</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Visual Attribution</span><span class="rv-spec-val">Pre-softmax Grad-CAM++</span></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -551,46 +680,46 @@ if page == "🏠 Overview":
     with col_b:
         st.markdown(
             """
-            <div class="rv-card rv-card-purple">
-                <span class="rv-pill-purple">Vision Transformer</span>
-                <h3 style="margin:0.5rem 0 0.4rem 0;color:#581c87;">ViT-B/16 (Patch 16×16)</h3>
-                <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem;">
-                    12-layer Multi-Head Self-Attention encoder capturing global leaf context to eliminate background shortcut bias.
+            <div class="rv-dossier rv-dossier-vit">
+                <h3>ViT-B/16 (Vision Transformer)</h3>
+                <p>
+                    12-layer Multi-Head Self-Attention encoder operating on 196 non-overlapping 16×16 patches,
+                    capturing full-blade context to suppress background weed shortcut bias.
                 </p>
-                <ul style="font-size:0.85rem;color:#334155;margin:0;padding-left:1.2rem;">
-                    <li><strong>Test Accuracy:</strong> 97.72% &nbsp;|&nbsp; <strong>Macro F1:</strong> 97.71% &nbsp;|&nbsp; <strong>ROC-AUC:</strong> 99.74%</li>
-                    <li><strong>Checkpoint:</strong> 982.52 MB (85,803,270 parameters)</li>
-                    <li><strong>XAI Attribution:</strong> 14×14 Patch Input-Gradient Attention Saliency</li>
-                </ul>
+                <div class="rv-spec-row"><span class="rv-spec-key">Test Accuracy / Macro F1</span><span class="rv-spec-val">97.72% / 97.71%</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Macro Precision / Recall</span><span class="rv-spec-val">97.80% / 97.70%</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">ROC-AUC (One-vs-Rest)</span><span class="rv-spec-val">0.9974</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Parameters &amp; Size</span><span class="rv-spec-val">85,803,270 • 982.52 MB</span></div>
+                <div class="rv-spec-row"><span class="rv-spec-key">Visual Attribution</span><span class="rv-spec-val">14×14 Patch Attention Saliency</span></div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
 
-elif page == "🔬 Predict & XAI":
-    st.markdown("### 🔬 Dual-Model Disease Predictor & Explainable AI")
-    st.caption("Upload a rice leaf specimen or inspect pre-computed 6-class test samples with Grad-CAM++ and ViT Attention Saliency.")
+elif page == "Diagnostic Bench":
+    st.markdown("## Foliar Diagnostic Bench & Explainable AI")
+    st.caption("Evaluate custom field specimens or inspect pre-computed test leaves with side-by-side Grad-CAM++ and 14×14 Attention Saliency.")
 
-    tab_live, tab_sample = st.tabs(["📤 Upload Image (Live Inference)", "🖼️ Pre-Computed 6-Class Gallery"])
+    tab_live, tab_sample = st.tabs(["Upload Specimen (Live Inference)", "Audited 6-Class Test Gallery"])
 
     with tab_live:
         with st.container(border=True):
-            col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1.4, 1.4])
+            col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2.1, 1.4, 1.5])
             with col_ctrl1:
-                uploaded = st.file_uploader("Upload Rice Leaf Photo (.jpg, .png, .webp)", type=["jpg", "jpeg", "png", "webp"])
+                uploaded = st.file_uploader("Select Rice Leaf Specimen (.jpg, .png, .webp)", type=["jpg", "jpeg", "png", "webp"])
             with col_ctrl2:
                 model_choice = st.selectbox(
-                    "Inference Mode",
-                    ["Both Models (Side-by-Side)", "EfficientNetV2-S Only (Low RAM)", "ViT-B/16 Only"],
+                    "Architecture Execution Mode",
+                    ["Both Architectures (Side-by-Side)", "EfficientNetV2-S Only (Low RAM)", "ViT-B/16 Only"],
                 )
             with col_ctrl3:
-                alpha = st.slider("Heatmap Opacity (α)", 0.15, 0.85, 0.45, 0.05)
-                view_mode = st.radio("Heatmap View", ["Overlay", "Raw Heatmap", "Original"], horizontal=True)
+                alpha = st.slider("Attribution Overlay Opacity (α)", 0.15, 0.85, 0.45, 0.05)
+                view_mode = st.radio("Layer View", ["Overlay", "Raw Heatmap", "Original"], horizontal=True)
 
         if uploaded is not None:
             pil_img = Image.open(uploaded).convert("RGB")
-            if st.button("🚀 Run Diagnosis", type="primary", use_container_width=True):
+            if st.button("Execute Foliar Diagnosis", type="primary", use_container_width=True):
                 targets = (
                     ["efficientnetv2s", "vit_base"]
                     if model_choice.startswith("Both")
@@ -599,26 +728,35 @@ elif page == "🔬 Predict & XAI":
                 results = {}
                 for mk in targets:
                     label = "EfficientNetV2-S" if mk == "efficientnetv2s" else "ViT-B/16"
-                    with st.spinner(f"Running {label}..."):
+                    with st.spinner(f"Running {label} inference and attribution..."):
                         try:
                             results[mk] = run_inference(pil_img, mk, alpha)
                         except FileNotFoundError as exc:
-                            st.warning(f"⚠️ **{label} unavailable on this host:** {exc}")
+                            st.warning(f"{label} checkpoint unavailable on this host: {exc}")
                         except Exception as exc:
-                            st.error(f"❌ **{label} failed:** {exc}")
+                            st.error(f"{label} execution error: {exc}")
 
                 if len(results) == 2:
                     e_cls = results["efficientnetv2s"]["predicted_class"]
                     v_cls = results["vit_base"]["predicted_class"]
                     if e_cls == v_cls:
-                        st.success(f"🤝 **Model Consensus:** Both models agree on **{v_cls}**")
+                        st.markdown(
+                            f'<div class="rv-banner-consensus"><strong>Architectural Consensus:</strong> '
+                            f'Both EfficientNetV2-S and ViT-B/16 classify this specimen as <strong>{v_cls}</strong>.</div>',
+                            unsafe_allow_html=True,
+                        )
                     else:
-                        st.warning(f"⚖️ **Divergence:** EfficientNetV2-S predicts **{e_cls}**, while ViT-B/16 predicts **{v_cls}**")
+                        st.markdown(
+                            f'<div class="rv-banner-divergence"><strong>Architectural Divergence:</strong> '
+                            f'EfficientNetV2-S predicts <strong>{e_cls}</strong>, whereas ViT-B/16 predicts <strong>{v_cls}</strong>.</div>',
+                            unsafe_allow_html=True,
+                        )
 
                 if results:
                     cols = st.columns(len(results))
                     for col, (mk, res) in zip(cols, results.items()):
-                        title = "EfficientNetV2-S (Grad-CAM++)" if mk == "efficientnetv2s" else "ViT-B/16 (Attention Saliency)"
+                        title = "EfficientNetV2-S — Grad-CAM++" if mk == "efficientnetv2s" else "ViT-B/16 — Attention Saliency"
+                        bar_color = "#1B5E3A" if mk == "efficientnetv2s" else "#5B2E91"
                         with col:
                             with st.container(border=True):
                                 st.subheader(title)
@@ -627,27 +765,30 @@ elif page == "🔬 Predict & XAI":
                                     else (res["raw_hm_img"] if view_mode == "Raw Heatmap" else res["orig_img"])
                                 )
                                 st.image(img_to_show, use_container_width=True, caption=f"{res['xai_method']} • {res['inference_ms']} ms")
-                                st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                                st.metric("Predicted Diagnosis", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
                                 score_df = pd.DataFrame({
                                     "Class": list(res["scores"].keys()),
                                     "Probability (%)": [v * 100 for v in res["scores"].values()],
                                 }).sort_values("Probability (%)", ascending=True)
-                                fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=230)
-                                fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
-                                st.plotly_chart(fig, use_container_width=True)
-                    st.info(DISCLAIMER)
+                                fig = px.bar(
+                                    score_df, x="Probability (%)", y="Class", orientation="h",
+                                    color_discrete_sequence=[bar_color],
+                                )
+                                fig.update_layout(xaxis_range=[0, 100])
+                                st.plotly_chart(style_plotly(fig, 225), use_container_width=True)
+                    st.caption(DISCLAIMER)
 
     with tab_sample:
         samples = load_json(str(OUTPUTS_DIR / "sample_results.json"))
         class_imgs = load_json(str(OUTPUTS_DIR / "class_images.json"))
         if not samples:
-            st.warning("`outputs/sample_results.json` not found.")
+            st.warning("Pre-computed gallery file `outputs/sample_results.json` not found.")
         else:
-            scol1, scol2 = st.columns([2, 1])
+            scol1, scol2 = st.columns([2.2, 1])
             with scol1:
-                chosen = st.selectbox("Select Pre-Computed Test Sample", list(samples.keys()))
+                chosen = st.selectbox("Select Audited Reference Specimen", list(samples.keys()))
             with scol2:
-                sample_hm_view = st.radio("Gallery Heatmap View", ["Overlay", "Raw Heatmap"], horizontal=True)
+                sample_hm_view = st.radio("Attribution Layer", ["Overlay", "Raw Heatmap"], horizontal=True)
 
             item = samples[chosen]
             eff = item["efficientnetv2s"]
@@ -655,23 +796,32 @@ elif page == "🔬 Predict & XAI":
             hm_key = "gradcam_overlay" if sample_hm_view == "Overlay" else "gradcam_raw"
 
             if eff["predicted_class"] == vit["predicted_class"]:
-                st.success(f"🤝 **Model Consensus:** Both models predict **{vit['predicted_class']}** (True Class: **{chosen}**)")
+                st.markdown(
+                    f'<div class="rv-banner-consensus"><strong>Architectural Consensus:</strong> '
+                    f'Both models predict <strong>{vit["predicted_class"]}</strong> (Ground Truth: <strong>{chosen}</strong>).</div>',
+                    unsafe_allow_html=True,
+                )
             else:
-                st.warning(f"⚖️ **Divergence:** EfficientNetV2-S predicts **{eff['predicted_class']}**, ViT-B/16 predicts **{vit['predicted_class']}** (True Class: **{chosen}**)")
+                st.markdown(
+                    f'<div class="rv-banner-divergence"><strong>Architectural Divergence:</strong> '
+                    f'EfficientNetV2-S predicts <strong>{eff["predicted_class"]}</strong>, whereas ViT-B/16 predicts '
+                    f'<strong>{vit["predicted_class"]}</strong> (Ground Truth: <strong>{chosen}</strong>).</div>',
+                    unsafe_allow_html=True,
+                )
 
             c1, c2, c3 = st.columns(3)
             with c1:
                 with st.container(border=True):
-                    st.subheader("Original Leaf")
+                    st.subheader("Original Specimen")
                     orig_b64 = item.get("original_image") or class_imgs.get(chosen)
                     if orig_b64:
-                        st.image(b64_to_pil(orig_b64), caption=f"True Class: {chosen}", use_container_width=True)
+                        st.image(b64_to_pil(orig_b64), caption=f"Ground Truth: {chosen}", use_container_width=True)
                     else:
-                        st.info("Original thumbnail unavailable.")
+                        st.info("Reference image unavailable.")
 
             for col, (res, title, xai_label, bar_color) in zip([c2, c3], [
-                (eff, "EfficientNetV2-S", "Grad-CAM++", "#16a34a"),
-                (vit, "ViT-B/16 (Transformer)", "Attention Saliency (14×14)", "#9333ea"),
+                (eff, "EfficientNetV2-S", "Grad-CAM++", "#1B5E3A"),
+                (vit, "ViT-B/16 (Transformer)", "Attention Saliency (14×14)", "#5B2E91"),
             ]):
                 with col:
                     with st.container(border=True):
@@ -681,54 +831,51 @@ elif page == "🔬 Predict & XAI":
                             caption=f"{xai_label} • {res['inference_ms']} ms",
                             use_container_width=True,
                         )
-                        st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                        st.metric("Predicted Diagnosis", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
                         score_df = pd.DataFrame({
                             "Class": list(res["scores"].keys()),
                             "Probability (%)": [v * 100 for v in res["scores"].values()],
                         }).sort_values("Probability (%)", ascending=True)
-                        fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=220, color_discrete_sequence=[bar_color])
-                        fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
-                        st.plotly_chart(fig, use_container_width=True)
+                        fig = px.bar(
+                            score_df, x="Probability (%)", y="Class", orientation="h",
+                            color_discrete_sequence=[bar_color],
+                        )
+                        fig.update_layout(xaxis_range=[0, 100])
+                        st.plotly_chart(style_plotly(fig, 215), use_container_width=True)
 
 
-elif page == "📊 Comparison":
-    st.markdown("### 📊 Head-to-Head Model Benchmark")
-    st.caption("Empirical comparison between EfficientNetV2-S (Lightweight CNN) and ViT-B/16 (Vision Transformer) on 570 held-out test images.")
+elif page == "Benchmark":
+    st.markdown("## Head-to-Head Empirical Benchmark")
+    st.caption("Evaluated on 570 held-out test specimens under identical SHA-256 + pHash zero-leakage protocols.")
 
     eff_m = load_json(str(OUTPUTS_DIR / "efficientnetv2s" / "metrics.json"))
     vit_m = load_json(str(OUTPUTS_DIR / "vit_base" / "metrics.json"))
     eff_e = load_json(str(OUTPUTS_DIR / "efficientnetv2s" / "efficiency.json"))
     vit_e = load_json(str(OUTPUTS_DIR / "vit_base" / "efficiency.json"))
 
-    tab1, tab2, tab3 = st.tabs(["Benchmark Overview", "Per-Class Metrics", "Confusion Matrices"])
+    tab1, tab2, tab3 = st.tabs(["Aggregate & Efficiency Ledger", "Per-Class F1 Breakdown", "Confusion Matrices"])
     with tab1:
-        c1, c2, c3, c4 = st.columns(4)
-        c1.markdown(render_stat_card("ViT-B/16 Test Acc", f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Transformer Leader (+2.46%)", "purple"), unsafe_allow_html=True)
-        c2.markdown(render_stat_card("EfficientNetV2-S Acc", f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "Lightweight CNN Baseline", "green"), unsafe_allow_html=True)
-        c3.markdown(render_stat_card("Model Size Gap", "11.8× Lighter", "83.04 MB vs 982.52 MB", "green"), unsafe_allow_html=True)
-        c4.markdown(render_stat_card("ViT Throughput", f"{vit_e.get('throughput_fps', 130.8)} FPS", "Sub-8ms Latency on GPU", "purple"), unsafe_allow_html=True)
-
-        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-        left_col, right_col = st.columns(2)
+        left_col, right_col = st.columns([1.25, 1])
         with left_col:
             with st.container(border=True):
-                st.subheader("Classification & Efficiency Metrics")
+                st.subheader("Classification & Computational Ledger")
                 comp_df = pd.DataFrame([
-                    {"Metric": "Test Accuracy", "EfficientNetV2-S": f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "ViT-B/16": f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Winner": "ViT-B/16"},
-                    {"Metric": "Macro Precision", "EfficientNetV2-S": f"{eff_m.get('precision_macro', 0.9523)*100:.2f}%", "ViT-B/16": f"{vit_m.get('precision_macro', 0.9780)*100:.2f}%", "Winner": "ViT-B/16"},
-                    {"Metric": "Macro Recall", "EfficientNetV2-S": f"{eff_m.get('recall_macro', 0.9522)*100:.2f}%", "ViT-B/16": f"{vit_m.get('recall_macro', 0.9770)*100:.2f}%", "Winner": "ViT-B/16"},
-                    {"Metric": "Macro F1-Score", "EfficientNetV2-S": f"{eff_m.get('f1_score_macro', 0.9521)*100:.2f}%", "ViT-B/16": f"{vit_m.get('f1_score_macro', 0.9771)*100:.2f}%", "Winner": "ViT-B/16"},
-                    {"Metric": "ROC-AUC (Macro)", "EfficientNetV2-S": f"{eff_m.get('roc_auc_macro', 0.9961)*100:.2f}%", "ViT-B/16": f"{vit_m.get('roc_auc_macro', 0.9974)*100:.2f}%", "Winner": "ViT-B/16"},
-                    {"Metric": "Model Size (MB)", "EfficientNetV2-S": "83.04 MB", "ViT-B/16": "982.52 MB", "Winner": "EfficientNetV2-S"},
-                    {"Metric": "Total Parameters", "EfficientNetV2-S": f"{eff_e.get('total_parameters', 20660838):,}", "ViT-B/16": f"{vit_e.get('total_parameters', 85803270):,}", "Winner": "EfficientNetV2-S"},
-                    {"Metric": "Avg GPU Latency", "EfficientNetV2-S": f"{eff_e.get('average_latency_ms', 14.88)} ms", "ViT-B/16": f"{vit_e.get('average_latency_ms', 7.64)} ms", "Winner": "ViT-B/16"},
-                    {"Metric": "GPU Throughput", "EfficientNetV2-S": f"{eff_e.get('throughput_fps', 67.2)} fps", "ViT-B/16": f"{vit_e.get('throughput_fps', 130.8)} fps", "Winner": "ViT-B/16"},
+                    {"Metric": "Test Accuracy", "EfficientNetV2-S": f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "ViT-B/16": f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Advantage": "ViT-B/16 (+2.46%)"},
+                    {"Metric": "Macro Precision", "EfficientNetV2-S": f"{eff_m.get('precision_macro', 0.9523)*100:.2f}%", "ViT-B/16": f"{vit_m.get('precision_macro', 0.9780)*100:.2f}%", "Advantage": "ViT-B/16 (+2.57%)"},
+                    {"Metric": "Macro Recall", "EfficientNetV2-S": f"{eff_m.get('recall_macro', 0.9522)*100:.2f}%", "ViT-B/16": f"{vit_m.get('recall_macro', 0.9770)*100:.2f}%", "Advantage": "ViT-B/16 (+2.48%)"},
+                    {"Metric": "Macro F1-Score", "EfficientNetV2-S": f"{eff_m.get('f1_score_macro', 0.9521)*100:.2f}%", "ViT-B/16": f"{vit_m.get('f1_score_macro', 0.9771)*100:.2f}%", "Advantage": "ViT-B/16 (+2.50%)"},
+                    {"Metric": "ROC-AUC (Macro OvR)", "EfficientNetV2-S": f"{eff_m.get('roc_auc_macro', 0.9961)*100:.2f}%", "ViT-B/16": f"{vit_m.get('roc_auc_macro', 0.9974)*100:.2f}%", "Advantage": "ViT-B/16 (+0.13%)"},
+                    {"Metric": "Checkpoint Size", "EfficientNetV2-S": "83.04 MB", "ViT-B/16": "982.52 MB", "Advantage": "EfficientNetV2-S (11.8× smaller)"},
+                    {"Metric": "Total Parameters", "EfficientNetV2-S": f"{eff_e.get('total_parameters', 20660838):,}", "ViT-B/16": f"{vit_e.get('total_parameters', 85803270):,}", "Advantage": "EfficientNetV2-S (4.15× fewer)"},
+                    {"Metric": "Training Time", "EfficientNetV2-S": "9.98 min", "ViT-B/16": "4.75 min", "Advantage": "ViT-B/16 (2.1× faster)"},
+                    {"Metric": "Avg GPU Latency", "EfficientNetV2-S": f"{eff_e.get('average_latency_ms', 14.88)} ms", "ViT-B/16": f"{vit_e.get('average_latency_ms', 7.64)} ms", "Advantage": "ViT-B/16 (1.95× faster)"},
+                    {"Metric": "GPU Throughput", "EfficientNetV2-S": f"{eff_e.get('throughput_fps', 67.2)} fps", "ViT-B/16": f"{vit_e.get('throughput_fps', 130.8)} fps", "Advantage": "ViT-B/16 (+94.6%)"},
                 ])
                 st.dataframe(comp_df, use_container_width=True, hide_index=True)
 
         with right_col:
             with st.container(border=True):
-                st.subheader("Performance Profile Radar")
+                st.subheader("Macro Metric Profile")
                 radar_cats = ["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]
                 eff_vals = [
                     eff_m.get("accuracy", 0.9526) * 100,
@@ -745,9 +892,14 @@ elif page == "📊 Comparison":
                     vit_m.get("roc_auc_macro", 0.9974) * 100,
                 ]
                 fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(r=eff_vals + [eff_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="EfficientNetV2-S", line_color="#16a34a"))
-                fig_radar.add_trace(go.Scatterpolar(r=vit_vals + [vit_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="ViT-B/16", line_color="#9333ea"))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[90, 100])), height=370, margin=dict(l=30, r=30, t=20, b=20))
+                fig_radar.add_trace(go.Scatterpolar(r=eff_vals + [eff_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="EfficientNetV2-S", line_color="#1B5E3A"))
+                fig_radar.add_trace(go.Scatterpolar(r=vit_vals + [vit_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="ViT-B/16", line_color="#5B2E91"))
+                fig_radar.update_layout(
+                    polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(visible=True, range=[92, 100], gridcolor="#DDD9D0")),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    height=370,
+                    margin=dict(l=30, r=30, t=20, b=20),
+                )
                 st.plotly_chart(fig_radar, use_container_width=True)
 
     with tab2:
@@ -758,65 +910,72 @@ elif page == "📊 Comparison":
                 "Class": df_eff["Class"],
                 "EfficientNetV2-S F1 (%)": df_eff["F1-Score"].round(2),
                 "ViT-B/16 F1 (%)": df_vit["F1-Score"].round(2),
-                "Support": df_eff["Support"],
+                "Delta (ViT - CNN)": (df_vit["F1-Score"] - df_eff["F1-Score"]).round(2),
+                "Test Support": df_eff["Support"],
             })
-            fig = go.Figure(data=[
-                go.Bar(name="EfficientNetV2-S", x=merged["Class"], y=merged["EfficientNetV2-S F1 (%)"], marker_color="#16a34a"),
-                go.Bar(name="ViT-B/16", x=merged["Class"], y=merged["ViT-B/16 F1 (%)"], marker_color="#9333ea"),
-            ])
-            fig.update_layout(barmode="group", yaxis_range=[85, 100], height=400, title="F1-Score Comparison Across All 6 Disease Classes")
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(merged, use_container_width=True, hide_index=True)
+            with st.container(border=True):
+                st.subheader("Per-Class F1-Score Comparison")
+                fig = go.Figure(data=[
+                    go.Bar(name="EfficientNetV2-S", x=merged["Class"], y=merged["EfficientNetV2-S F1 (%)"], marker_color="#1B5E3A"),
+                    go.Bar(name="ViT-B/16", x=merged["Class"], y=merged["ViT-B/16 F1 (%)"], marker_color="#5B2E91"),
+                ])
+                fig.update_layout(barmode="group", yaxis_range=[88, 100])
+                st.plotly_chart(style_plotly(fig, 360), use_container_width=True)
+                st.dataframe(merged, use_container_width=True, hide_index=True)
 
     with tab3:
         c1, c2 = st.columns(2)
         for col, (mdir, title, scale) in zip([c1, c2], [
-            ("efficientnetv2s", "EfficientNetV2-S (570 Test Images)", "Greens"),
-            ("vit_base", "ViT-B/16 (570 Test Images)", "Purples"),
+            ("efficientnetv2s", "EfficientNetV2-S Confusion Matrix (n = 570)", "Greens"),
+            ("vit_base", "ViT-B/16 Confusion Matrix (n = 570)", "Purples"),
         ]):
             cm = load_confusion_matrix(mdir)
             if not cm.empty:
                 with col:
                     with st.container(border=True):
-                        fig = px.imshow(cm, text_auto=True, color_continuous_scale=scale, title=title)
-                        fig.update_layout(height=420)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.subheader(title)
+                        fig = px.imshow(cm, text_auto=True, color_continuous_scale=scale)
+                        st.plotly_chart(style_plotly(fig, 410), use_container_width=True)
 
 
-elif page == "🌱 Classes":
-    st.markdown("### 🌱 Rice Leaf Pathology Reference (6 Classes)")
-    st.caption("Representative specimens, visual symptoms, and agronomic management guidelines.")
+elif page == "Pathology Atlas":
+    st.markdown("## Foliar Rice Pathology Atlas")
+    st.caption("Diagnostic reference for the six target Oryza sativa foliar categories, pathogen etiology, and agronomic management.")
     class_imgs = load_json(str(OUTPUTS_DIR / "class_images.json"))
     cols = st.columns(2)
     for i, cls in enumerate(CLASS_NAMES):
         info = DISEASE_INFO[cls]
         with cols[i % 2]:
             with st.container(border=True):
-                c_img, c_txt = st.columns([1, 2])
+                c_img, c_txt = st.columns([1, 2.1])
                 with c_img:
                     if cls in class_imgs and class_imgs[cls]:
                         st.image(b64_to_pil(class_imgs[cls]), use_container_width=True)
                 with c_txt:
                     st.subheader(cls)
+                    st.caption(f"Causal Agent: {info['pathogen']}")
                     st.write(info["desc"])
-                    st.markdown(f"**Symptoms:** {info['symptoms']}")
-                    st.markdown(f"**Management:** {info['management']}")
+                    st.markdown(f"**Visual Symptoms:** {info['symptoms']}")
+                    st.markdown(f"**Field Management:** {info['management']}")
 
 
-elif page == "🧪 Methodology":
-    st.markdown("### 🧪 Research Pipeline & Methodology")
-    st.caption("End-to-end leakage-free workflow from raw image collection to Explainable AI deployment.")
+elif page == "Methodology":
+    st.markdown("## Experimental Protocol & Pipeline Architecture")
+    st.caption("Audited workflow from cryptographic deduplication to two-stage transfer learning and post-hoc visual attribution.")
 
     steps = [
-        ("1. Dataset Collection & Standardization", "3,829 raw rice leaf images collected across 6 pathological classes."),
-        ("2. Audit & Leakage-Free Splitting (SHA-256 + pHash)",
-         "Excluded **31 exact duplicates** via SHA-256 (3,798 unique canonical images preserved) and grouped **67 near-duplicate clusters** via pHash (`d ≤ 10`) into the same split: **75% Train (2,847)** / **10% Val (381)** / **15% Test (570)** with **0 hash overlap**."),
-        ("3. Two-Stage Fine-Tuning",
-         "**Stage 1:** Freeze ImageNet-pretrained backbone, train classification head (`Adam`, `lr=1e-3`).\n\n"
-         "**Stage 2:** Unfreeze full model with low learning rate (`AdamW`, `5e-5` for EfficientNetV2-S, `2e-5` for ViT-B/16), `ReduceLROnPlateau`, and `EarlyStopping`."),
-        ("4. Explainable AI (Grad-CAM++ & Attention Saliency)",
-         "**EfficientNetV2-S:** Pre-softmax **Grad-CAM++** (Chattopadhay et al., 2018).\n\n"
-         "**ViT-B/16:** **14×14 Patch Attention Saliency** (`avg_pool2d` `16×16`, 99th percentile clipping) blended at `α = 0.45`."),
+        ("Dataset Collection & Standardization",
+         "3,829 high-resolution foliar rice images across six pathological classes standardized to 224×224 RGB tensors."),
+        ("Two-Stage Deduplication & Zero-Leakage Split (SHA-256 + pHash)",
+         "Stage 1 removed **31 exact duplicate files** via SHA-256 cryptographic hashing, preserving **3,798 unique canonical images**. "
+         "Stage 2 computed 64-bit DCT perceptual hashes (`pHash`, Hamming distance ≤ 10) to isolate **67 near-duplicate clusters** "
+         "(burst shots and pre-augmented variants) into identical splits: **75% Train (2,847)**, **10% Validation (381)**, and **15% Test (570)**."),
+        ("Two-Stage Transfer Learning & Fine-Tuning",
+         "**Stage 1 (Head Adaptation):** ImageNet-pretrained backbones frozen (`trainable = False`); classification head trained with `Adam (lr = 1e-3)` and `EarlyStopping (patience = 3)`.\n\n"
+         "**Stage 2 (Full Fine-Tuning):** Full network unfrozen with `AdamW (weight_decay = 0.05)` at low learning rates (`5e-5` for EfficientNetV2-S, `2e-5` for ViT-B/16), governed by `ReduceLROnPlateau` and `EarlyStopping`."),
+        ("Explainable AI: Pre-Softmax Grad-CAM++ & 14×14 Attention Saliency",
+         "**EfficientNetV2-S:** Uses pre-softmax logits with 2nd- and 3rd-order positive gradient power weighting (Chattopadhay et al., 2018) to avoid softmax saturation and localize multi-lesion borders.\n\n"
+         "**ViT-B/16:** Computes input-gradient saliency ($|\\partial \\text{score} / \\partial x|$) pooled via `avg_pool2d (16×16)` into a 14×14 token grid, clipped at the 99th percentile and blended with `COLORMAP_JET` (`α = 0.45`)."),
     ]
     for title, body in steps:
         with st.container(border=True):
