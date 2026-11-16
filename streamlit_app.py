@@ -570,7 +570,7 @@ elif page == "🔬 Predict & XAI":
                         except FileNotFoundError as exc:
                             st.warning(f"⚠️ **{label} unavailable on this host:** {exc}")
                         except Exception as exc:
-                            st.error(f"❌ **{label} failed (likely RAM limit):** {exc}")
+                            st.error(f"❌ **{label} failed:** {exc}")
 
                 if len(results) == 2:
                     e_cls = results["efficientnetv2s"]["predicted_class"]
