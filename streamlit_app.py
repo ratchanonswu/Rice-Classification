@@ -1,5 +1,5 @@
 """
-RiceVision AI — Streamlit Deployment App
+RiceVision AI — Streamlit Deployment App (Styled to match RiceVision AI React UI)
 Supports both EfficientNetV2-S (Grad-CAM++) and ViT-B/16 (14x14 Attention Saliency)
 alongside benchmark comparison, disease reference, and methodology documentation.
 """
@@ -10,7 +10,7 @@ import io
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import cv2
 import keras_hub  # noqa: F401 — required for ViT-B/16 custom layer deserialization
@@ -28,7 +28,7 @@ st.set_page_config(
     page_title="RiceVision AI — EfficientNetV2-S vs. ViT-B/16",
     page_icon="🌾",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -92,6 +92,149 @@ DISEASE_INFO = {
 DISCLAIMER = (
     "Predictions, Grad-CAM++, and ViT Attention Saliency heatmaps are deep learning research outputs "
     "intended for decision-support and should be verified with qualified agronomists before field treatment."
+)
+
+# ─── Custom CSS (Matching RiceVision AI React + Tailwind UI) ──────────────────
+
+st.markdown(
+    """
+    <style>
+    /* Clean background & layout */
+    .stApp {
+        background-color: #f8fafc;
+    }
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 3rem;
+        max-width: 1240px;
+    }
+    header[data-testid="stHeader"] {
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid #e2e8f0;
+    }
+    #MainMenu, footer {visibility: hidden;}
+
+    /* Hero Banner */
+    .rv-hero {
+        background: linear-gradient(135deg, #14532d 0%, #15803d 55%, #166534 100%);
+        color: white;
+        padding: 2rem 2.25rem;
+        border-radius: 1.25rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 25px -5px rgba(21, 128, 61, 0.22);
+    }
+    .rv-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #dcfce7;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        margin-bottom: 0.75rem;
+    }
+    .rv-hero h1 {
+        color: white !important;
+        font-size: 1.95rem !important;
+        font-weight: 800 !important;
+        margin: 0 0 0.5rem 0 !important;
+        line-height: 1.2 !important;
+    }
+    .rv-hero p {
+        color: #dcfce7;
+        font-size: 0.96rem;
+        margin: 0;
+        max-width: 780px;
+        line-height: 1.55;
+    }
+
+    /* Stat Cards */
+    .rv-stat {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.1rem 1.25rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+    .rv-stat-accent {
+        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+        border: 1px solid #bbf7d0;
+    }
+    .rv-stat-purple {
+        background: linear-gradient(180deg, #faf5ff 0%, #ffffff 100%);
+        border: 1px solid #e9d5ff;
+    }
+    .rv-stat-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .rv-stat-value {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0.2rem 0;
+    }
+    .rv-stat-sub {
+        font-size: 0.78rem;
+        color: #475569;
+    }
+
+    /* Model Summary Cards */
+    .rv-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.25rem 1.4rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        margin-bottom: 1rem;
+    }
+    .rv-card-green {
+        background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 45%);
+        border: 1px solid #bbf7d0;
+    }
+    .rv-card-purple {
+        background: linear-gradient(180deg, #faf5ff 0%, #ffffff 45%);
+        border: 1px solid #e9d5ff;
+    }
+    .rv-pill-green {
+        display: inline-block;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.55rem;
+        border-radius: 9999px;
+    }
+    .rv-pill-purple {
+        display: inline-block;
+        background: #f3e8ff;
+        color: #6b21a8;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.55rem;
+        border-radius: 9999px;
+    }
+
+    /* Top Nav Radio as clean segmented pills */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        background: #ffffff;
+        padding: 0.35rem;
+        border-radius: 0.9rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        justify-content: center;
+        gap: 0.35rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
@@ -258,18 +401,25 @@ def b64_to_pil(data_url: str) -> Image.Image:
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
 
 
-# ─── Sidebar Navigation ───────────────────────────────────────────────────────
+def render_stat_card(label: str, value: str, sub: str, variant: str = "default") -> str:
+    cls = "rv-stat"
+    if variant == "green":
+        cls += " rv-stat-accent"
+    elif variant == "purple":
+        cls += " rv-stat-purple"
+    return (
+        f'<div class="{cls}">'
+        f'<div class="rv-stat-label">{label}</div>'
+        f'<div class="rv-stat-value">{value}</div>'
+        f'<div class="rv-stat-sub">{sub}</div>'
+        f'</div>'
+    )
+
+
+# ─── Sidebar (System / RAM Utilities) ─────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("## 🌾 RiceVision AI")
-    st.caption("EfficientNetV2-S vs. ViT-B/16")
-    page = st.radio(
-        "Navigation",
-        ["Overview", "Live Prediction & XAI", "Model Comparison", "Disease Classes", "Methodology"],
-        index=1,
-    )
-    st.divider()
-    st.markdown("**Model Checkpoints**")
+    st.markdown("### ⚙️ Runtime Status")
     st.write(f"• EfficientNetV2-S (`83.0 MB`): {'✅ Ready' if EFFNET_CHECKPOINT.exists() else '❌ Missing'}")
     st.write(f"• ViT-B/16 (`982.5 MB`): {'✅ Ready' if VIT_CHECKPOINT.exists() else '❌ Missing'}")
     if st.button("🧹 Free Model RAM Cache", use_container_width=True):
@@ -279,63 +429,117 @@ with st.sidebar:
         st.success("Cleared cached models from RAM.")
 
 
+# ─── Top Navigation Bar (Matching React Navbar) ───────────────────────────────
+
+nav_col1, nav_col2 = st.columns([1.2, 3.8])
+with nav_col1:
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:0.5rem;padding-top:0.35rem;">'
+        '<span style="font-size:1.5rem;">🌾</span>'
+        '<div><div style="font-weight:800;font-size:1.05rem;color:#14532d;line-height:1.1;">RiceVision AI</div>'
+        '<div style="font-size:0.72rem;color:#64748b;">EfficientNetV2-S vs. ViT-B/16</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+with nav_col2:
+    page = st.radio(
+        "Navigation",
+        ["🏠 Overview", "📊 Comparison", "🌱 Classes", "🔬 Predict & XAI", "🧪 Methodology"],
+        index=3,
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+
 # ─── Pages ────────────────────────────────────────────────────────────────────
 
-if page == "Overview":
-    st.title("🌾 Rice Leaf Disease Classification: EfficientNetV2-S vs. ViT-B/16")
+if page == "🏠 Overview":
     st.markdown(
-        "Empirical benchmark comparing a lightweight CNN (**EfficientNetV2-S**) against a global "
-        "self-attention **Vision Transformer (ViT-B/16)** on a SHA-256 + pHash deduplicated dataset."
+        """
+        <div class="rv-hero">
+            <div class="rv-badge">Zero-Leakage SHA-256 + pHash Benchmark • Explainable AI</div>
+            <h1>Rice Leaf Disease Classification:<br/>EfficientNetV2-S vs. Vision Transformer (ViT-B/16)</h1>
+            <p>
+                Controlled empirical benchmark comparing a lightweight convolutional backbone against a global
+                self-attention Vision Transformer across 3,798 deduplicated leaf specimens and 6 disease classes,
+                instrumented with Grad-CAM++ and 14×14 Attention Saliency.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("ViT-B/16 Test Accuracy", "97.72%", "+2.46% vs CNN")
-    c2.metric("EfficientNetV2-S Accuracy", "95.26%", "11.8× Lighter (83 MB)")
-    c3.metric("ViT GPU Throughput", "130.8 FPS", "7.64 ms / image")
-    c4.metric("Clean Dataset", "3,798 images", "6 Classes • 0 Leakage")
+    c1.markdown(render_stat_card("ViT-B/16 Test Acc", "97.72%", "Transformer Leader (+2.46%)", "purple"), unsafe_allow_html=True)
+    c2.markdown(render_stat_card("EfficientNetV2-S Acc", "95.26%", "Lightweight CNN Baseline", "green"), unsafe_allow_html=True)
+    c3.markdown(render_stat_card("Model Size Gap", "11.8× Lighter", "83.04 MB vs 982.52 MB", "green"), unsafe_allow_html=True)
+    c4.markdown(render_stat_card("ViT GPU Throughput", "130.8 FPS", "7.64 ms / image on GPU", "purple"), unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     col_a, col_b = st.columns(2)
     with col_a:
-        st.subheader("🟢 EfficientNetV2-S (Lightweight CNN)")
         st.markdown(
-            "- **Test Accuracy:** `95.26%` | **Macro F1:** `95.21%` | **ROC-AUC:** `0.9961`\n"
-            "- **Size & Params:** `83.04 MB` (`20,660,838` params)\n"
-            "- **XAI Method:** Grad-CAM++ (Chattopadhay et al., 2018)\n"
-            "- **Best For:** Resource-constrained & mobile/edge deployment"
+            """
+            <div class="rv-card rv-card-green">
+                <span class="rv-pill-green">Lightweight CNN</span>
+                <h3 style="margin:0.5rem 0 0.4rem 0;color:#14532d;">EfficientNetV2-S</h3>
+                <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem;">
+                    Fused-MBConv convolutional backbone optimized for compact deployment and low RAM footprints.
+                </p>
+                <ul style="font-size:0.85rem;color:#334155;margin:0;padding-left:1.2rem;">
+                    <li><strong>Test Accuracy:</strong> 95.26% &nbsp;|&nbsp; <strong>Macro F1:</strong> 95.21% &nbsp;|&nbsp; <strong>ROC-AUC:</strong> 99.61%</li>
+                    <li><strong>Checkpoint:</strong> 83.04 MB (20,660,838 parameters)</li>
+                    <li><strong>XAI Attribution:</strong> Pre-softmax Grad-CAM++ (Chattopadhay et al., 2018)</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
     with col_b:
-        st.subheader("🟣 ViT-B/16 (Vision Transformer)")
         st.markdown(
-            "- **Test Accuracy:** `97.72%` | **Macro F1:** `97.71%` | **ROC-AUC:** `0.9974`\n"
-            "- **Size & Params:** `982.52 MB` (`85,803,270` params)\n"
-            "- **XAI Method:** 14×14 Patch Attention Saliency\n"
-            "- **Best For:** Maximum accuracy & eliminating background shortcut bias"
+            """
+            <div class="rv-card rv-card-purple">
+                <span class="rv-pill-purple">Vision Transformer</span>
+                <h3 style="margin:0.5rem 0 0.4rem 0;color:#581c87;">ViT-B/16 (Patch 16×16)</h3>
+                <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem;">
+                    12-layer Multi-Head Self-Attention encoder capturing global leaf context to eliminate background shortcut bias.
+                </p>
+                <ul style="font-size:0.85rem;color:#334155;margin:0;padding-left:1.2rem;">
+                    <li><strong>Test Accuracy:</strong> 97.72% &nbsp;|&nbsp; <strong>Macro F1:</strong> 97.71% &nbsp;|&nbsp; <strong>ROC-AUC:</strong> 99.74%</li>
+                    <li><strong>Checkpoint:</strong> 982.52 MB (85,803,270 parameters)</li>
+                    <li><strong>XAI Attribution:</strong> 14×14 Patch Input-Gradient Attention Saliency</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
 
-elif page == "Live Prediction & XAI":
-    st.title("🔬 Live Prediction & Explainable AI (XAI)")
-    st.caption("Upload a rice leaf image or test with pre-computed clean test samples.")
+elif page == "🔬 Predict & XAI":
+    st.markdown("### 🔬 Dual-Model Disease Predictor & Explainable AI")
+    st.caption("Upload a rice leaf specimen or inspect pre-computed 6-class test samples with Grad-CAM++ and ViT Attention Saliency.")
 
     tab_live, tab_sample = st.tabs(["📤 Upload Image (Live Inference)", "🖼️ Pre-Computed 6-Class Gallery"])
 
     with tab_live:
-        col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1.5, 1.5])
-        with col_ctrl1:
-            uploaded = st.file_uploader("Upload Rice Leaf Photo (.jpg, .png)", type=["jpg", "jpeg", "png", "webp"])
-        with col_ctrl2:
-            model_choice = st.selectbox(
-                "Model Mode",
-                ["Both Models (Side-by-Side)", "EfficientNetV2-S Only (Low RAM)", "ViT-B/16 Only"],
-            )
-        with col_ctrl3:
-            alpha = st.slider("Heatmap Opacity (α)", 0.15, 0.85, 0.45, 0.05)
-            view_mode = st.radio("Heatmap View", ["Overlay", "Raw Heatmap", "Original"], horizontal=True)
+        with st.container(border=True):
+            col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1.4, 1.4])
+            with col_ctrl1:
+                uploaded = st.file_uploader("Upload Rice Leaf Photo (.jpg, .png, .webp)", type=["jpg", "jpeg", "png", "webp"])
+            with col_ctrl2:
+                model_choice = st.selectbox(
+                    "Inference Mode",
+                    ["Both Models (Side-by-Side)", "EfficientNetV2-S Only (Low RAM)", "ViT-B/16 Only"],
+                )
+            with col_ctrl3:
+                alpha = st.slider("Heatmap Opacity (α)", 0.15, 0.85, 0.45, 0.05)
+                view_mode = st.radio("Heatmap View", ["Overlay", "Raw Heatmap", "Original"], horizontal=True)
 
         if uploaded is not None:
             pil_img = Image.open(uploaded).convert("RGB")
-            if st.button("🚀 Run Diagnosis", type="primary"):
+            if st.button("🚀 Run Diagnosis", type="primary", use_container_width=True):
                 targets = (
                     ["efficientnetv2s", "vit_base"]
                     if model_choice.startswith("Both")
@@ -344,7 +548,7 @@ elif page == "Live Prediction & XAI":
                 results = {}
                 for mk in targets:
                     label = "EfficientNetV2-S" if mk == "efficientnetv2s" else "ViT-B/16"
-                    with st.spinner(f"Loading & running {label}..."):
+                    with st.spinner(f"Running {label}..."):
                         results[mk] = run_inference(pil_img, mk, alpha)
 
                 if len(results) == 2:
@@ -359,20 +563,21 @@ elif page == "Live Prediction & XAI":
                 for col, (mk, res) in zip(cols, results.items()):
                     title = "EfficientNetV2-S (Grad-CAM++)" if mk == "efficientnetv2s" else "ViT-B/16 (Attention Saliency)"
                     with col:
-                        st.subheader(title)
-                        img_to_show = (
-                            res["overlay_img"] if view_mode == "Overlay"
-                            else (res["raw_hm_img"] if view_mode == "Raw Heatmap" else res["orig_img"])
-                        )
-                        st.image(img_to_show, use_container_width=True, caption=f"{res['xai_method']} • {res['inference_ms']} ms")
-                        st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
-                        score_df = pd.DataFrame({
-                            "Class": list(res["scores"].keys()),
-                            "Probability (%)": [v * 100 for v in res["scores"].values()],
-                        }).sort_values("Probability (%)", ascending=True)
-                        fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=230)
-                        fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
-                        st.plotly_chart(fig, use_container_width=True)
+                        with st.container(border=True):
+                            st.subheader(title)
+                            img_to_show = (
+                                res["overlay_img"] if view_mode == "Overlay"
+                                else (res["raw_hm_img"] if view_mode == "Raw Heatmap" else res["orig_img"])
+                            )
+                            st.image(img_to_show, use_container_width=True, caption=f"{res['xai_method']} • {res['inference_ms']} ms")
+                            st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                            score_df = pd.DataFrame({
+                                "Class": list(res["scores"].keys()),
+                                "Probability (%)": [v * 100 for v in res["scores"].values()],
+                            }).sort_values("Probability (%)", ascending=True)
+                            fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=230)
+                            fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
+                            st.plotly_chart(fig, use_container_width=True)
                 st.info(DISCLAIMER)
 
     with tab_sample:
@@ -399,36 +604,40 @@ elif page == "Live Prediction & XAI":
 
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.subheader("Original Leaf")
-                orig_b64 = item.get("original_image") or class_imgs.get(chosen)
-                if orig_b64:
-                    st.image(b64_to_pil(orig_b64), caption=f"True Class: {chosen}", use_container_width=True)
-                else:
-                    st.info("Original thumbnail unavailable.")
+                with st.container(border=True):
+                    st.subheader("Original Leaf")
+                    orig_b64 = item.get("original_image") or class_imgs.get(chosen)
+                    if orig_b64:
+                        st.image(b64_to_pil(orig_b64), caption=f"True Class: {chosen}", use_container_width=True)
+                    else:
+                        st.info("Original thumbnail unavailable.")
 
-            for col, (res, title, xai_label) in zip([c2, c3], [
-                (eff, "EfficientNetV2-S", "Grad-CAM++"),
-                (vit, "ViT-B/16 (Transformer)", "Attention Saliency (14×14)"),
+            for col, (res, title, xai_label, bar_color) in zip([c2, c3], [
+                (eff, "EfficientNetV2-S", "Grad-CAM++", "#16a34a"),
+                (vit, "ViT-B/16 (Transformer)", "Attention Saliency (14×14)", "#9333ea"),
             ]):
                 with col:
-                    st.subheader(title)
-                    st.image(
-                        b64_to_pil(res[hm_key]),
-                        caption=f"{xai_label} • {res['inference_ms']} ms",
-                        use_container_width=True,
-                    )
-                    st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
-                    score_df = pd.DataFrame({
-                        "Class": list(res["scores"].keys()),
-                        "Probability (%)": [v * 100 for v in res["scores"].values()],
-                    }).sort_values("Probability (%)", ascending=True)
-                    fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=220)
-                    fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
-                    st.plotly_chart(fig, use_container_width=True)
+                    with st.container(border=True):
+                        st.subheader(title)
+                        st.image(
+                            b64_to_pil(res[hm_key]),
+                            caption=f"{xai_label} • {res['inference_ms']} ms",
+                            use_container_width=True,
+                        )
+                        st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                        score_df = pd.DataFrame({
+                            "Class": list(res["scores"].keys()),
+                            "Probability (%)": [v * 100 for v in res["scores"].values()],
+                        }).sort_values("Probability (%)", ascending=True)
+                        fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=220, color_discrete_sequence=[bar_color])
+                        fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
+                        st.plotly_chart(fig, use_container_width=True)
 
 
-elif page == "Model Comparison":
-    st.title("📊 Head-to-Head Model Benchmark")
+elif page == "📊 Comparison":
+    st.markdown("### 📊 Head-to-Head Model Benchmark")
+    st.caption("Empirical comparison between EfficientNetV2-S (Lightweight CNN) and ViT-B/16 (Vision Transformer) on 570 held-out test images.")
+
     eff_m = load_json(str(OUTPUTS_DIR / "efficientnetv2s" / "metrics.json"))
     vit_m = load_json(str(OUTPUTS_DIR / "vit_base" / "metrics.json"))
     eff_e = load_json(str(OUTPUTS_DIR / "efficientnetv2s" / "efficiency.json"))
@@ -436,18 +645,53 @@ elif page == "Model Comparison":
 
     tab1, tab2, tab3 = st.tabs(["Benchmark Overview", "Per-Class Metrics", "Confusion Matrices"])
     with tab1:
-        comp_df = pd.DataFrame([
-            {"Metric": "Test Accuracy", "EfficientNetV2-S": f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "ViT-B/16": f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Winner": "ViT-B/16"},
-            {"Metric": "Macro Precision", "EfficientNetV2-S": f"{eff_m.get('precision_macro', 0.9523)*100:.2f}%", "ViT-B/16": f"{vit_m.get('precision_macro', 0.9780)*100:.2f}%", "Winner": "ViT-B/16"},
-            {"Metric": "Macro Recall", "EfficientNetV2-S": f"{eff_m.get('recall_macro', 0.9522)*100:.2f}%", "ViT-B/16": f"{vit_m.get('recall_macro', 0.9770)*100:.2f}%", "Winner": "ViT-B/16"},
-            {"Metric": "Macro F1-Score", "EfficientNetV2-S": f"{eff_m.get('f1_score_macro', 0.9521)*100:.2f}%", "ViT-B/16": f"{vit_m.get('f1_score_macro', 0.9771)*100:.2f}%", "Winner": "ViT-B/16"},
-            {"Metric": "ROC-AUC (Macro)", "EfficientNetV2-S": f"{eff_m.get('roc_auc_macro', 0.9961)*100:.2f}%", "ViT-B/16": f"{vit_m.get('roc_auc_macro', 0.9974)*100:.2f}%", "Winner": "ViT-B/16"},
-            {"Metric": "Model Size (MB)", "EfficientNetV2-S": "83.04 MB", "ViT-B/16": "982.52 MB", "Winner": "EfficientNetV2-S"},
-            {"Metric": "Total Parameters", "EfficientNetV2-S": f"{eff_e.get('total_parameters', 20660838):,}", "ViT-B/16": f"{vit_e.get('total_parameters', 85803270):,}", "Winner": "EfficientNetV2-S"},
-            {"Metric": "Avg GPU Latency", "EfficientNetV2-S": f"{eff_e.get('average_latency_ms', 14.88)} ms", "ViT-B/16": f"{vit_e.get('average_latency_ms', 7.64)} ms", "Winner": "ViT-B/16"},
-            {"Metric": "GPU Throughput", "EfficientNetV2-S": f"{eff_e.get('throughput_fps', 67.2)} fps", "ViT-B/16": f"{vit_e.get('throughput_fps', 130.8)} fps", "Winner": "ViT-B/16"},
-        ])
-        st.dataframe(comp_df, use_container_width=True, hide_index=True)
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(render_stat_card("ViT-B/16 Test Acc", f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Transformer Leader (+2.46%)", "purple"), unsafe_allow_html=True)
+        c2.markdown(render_stat_card("EfficientNetV2-S Acc", f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "Lightweight CNN Baseline", "green"), unsafe_allow_html=True)
+        c3.markdown(render_stat_card("Model Size Gap", "11.8× Lighter", "83.04 MB vs 982.52 MB", "green"), unsafe_allow_html=True)
+        c4.markdown(render_stat_card("ViT Throughput", f"{vit_e.get('throughput_fps', 130.8)} FPS", "Sub-8ms Latency on GPU", "purple"), unsafe_allow_html=True)
+
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        left_col, right_col = st.columns(2)
+        with left_col:
+            with st.container(border=True):
+                st.subheader("Classification & Efficiency Metrics")
+                comp_df = pd.DataFrame([
+                    {"Metric": "Test Accuracy", "EfficientNetV2-S": f"{eff_m.get('accuracy', 0.9526)*100:.2f}%", "ViT-B/16": f"{vit_m.get('accuracy', 0.9772)*100:.2f}%", "Winner": "ViT-B/16"},
+                    {"Metric": "Macro Precision", "EfficientNetV2-S": f"{eff_m.get('precision_macro', 0.9523)*100:.2f}%", "ViT-B/16": f"{vit_m.get('precision_macro', 0.9780)*100:.2f}%", "Winner": "ViT-B/16"},
+                    {"Metric": "Macro Recall", "EfficientNetV2-S": f"{eff_m.get('recall_macro', 0.9522)*100:.2f}%", "ViT-B/16": f"{vit_m.get('recall_macro', 0.9770)*100:.2f}%", "Winner": "ViT-B/16"},
+                    {"Metric": "Macro F1-Score", "EfficientNetV2-S": f"{eff_m.get('f1_score_macro', 0.9521)*100:.2f}%", "ViT-B/16": f"{vit_m.get('f1_score_macro', 0.9771)*100:.2f}%", "Winner": "ViT-B/16"},
+                    {"Metric": "ROC-AUC (Macro)", "EfficientNetV2-S": f"{eff_m.get('roc_auc_macro', 0.9961)*100:.2f}%", "ViT-B/16": f"{vit_m.get('roc_auc_macro', 0.9974)*100:.2f}%", "Winner": "ViT-B/16"},
+                    {"Metric": "Model Size (MB)", "EfficientNetV2-S": "83.04 MB", "ViT-B/16": "982.52 MB", "Winner": "EfficientNetV2-S"},
+                    {"Metric": "Total Parameters", "EfficientNetV2-S": f"{eff_e.get('total_parameters', 20660838):,}", "ViT-B/16": f"{vit_e.get('total_parameters', 85803270):,}", "Winner": "EfficientNetV2-S"},
+                    {"Metric": "Avg GPU Latency", "EfficientNetV2-S": f"{eff_e.get('average_latency_ms', 14.88)} ms", "ViT-B/16": f"{vit_e.get('average_latency_ms', 7.64)} ms", "Winner": "ViT-B/16"},
+                    {"Metric": "GPU Throughput", "EfficientNetV2-S": f"{eff_e.get('throughput_fps', 67.2)} fps", "ViT-B/16": f"{vit_e.get('throughput_fps', 130.8)} fps", "Winner": "ViT-B/16"},
+                ])
+                st.dataframe(comp_df, use_container_width=True, hide_index=True)
+
+        with right_col:
+            with st.container(border=True):
+                st.subheader("Performance Profile Radar")
+                radar_cats = ["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]
+                eff_vals = [
+                    eff_m.get("accuracy", 0.9526) * 100,
+                    eff_m.get("precision_macro", 0.9523) * 100,
+                    eff_m.get("recall_macro", 0.9522) * 100,
+                    eff_m.get("f1_score_macro", 0.9521) * 100,
+                    eff_m.get("roc_auc_macro", 0.9961) * 100,
+                ]
+                vit_vals = [
+                    vit_m.get("accuracy", 0.9772) * 100,
+                    vit_m.get("precision_macro", 0.9780) * 100,
+                    vit_m.get("recall_macro", 0.9770) * 100,
+                    vit_m.get("f1_score_macro", 0.9771) * 100,
+                    vit_m.get("roc_auc_macro", 0.9974) * 100,
+                ]
+                fig_radar = go.Figure()
+                fig_radar.add_trace(go.Scatterpolar(r=eff_vals + [eff_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="EfficientNetV2-S", line_color="#16a34a"))
+                fig_radar.add_trace(go.Scatterpolar(r=vit_vals + [vit_vals[0]], theta=radar_cats + [radar_cats[0]], fill="toself", name="ViT-B/16", line_color="#9333ea"))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[90, 100])), height=370, margin=dict(l=30, r=30, t=20, b=20))
+                st.plotly_chart(fig_radar, use_container_width=True)
 
     with tab2:
         df_eff = load_classification_report(str(OUTPUTS_DIR / "efficientnetv2s" / "classification_report.csv"))
@@ -457,12 +701,13 @@ elif page == "Model Comparison":
                 "Class": df_eff["Class"],
                 "EfficientNetV2-S F1 (%)": df_eff["F1-Score"].round(2),
                 "ViT-B/16 F1 (%)": df_vit["F1-Score"].round(2),
+                "Support": df_eff["Support"],
             })
             fig = go.Figure(data=[
                 go.Bar(name="EfficientNetV2-S", x=merged["Class"], y=merged["EfficientNetV2-S F1 (%)"], marker_color="#16a34a"),
                 go.Bar(name="ViT-B/16", x=merged["Class"], y=merged["ViT-B/16 F1 (%)"], marker_color="#9333ea"),
             ])
-            fig.update_layout(barmode="group", yaxis_range=[85, 100], height=420)
+            fig.update_layout(barmode="group", yaxis_range=[85, 100], height=400, title="F1-Score Comparison Across All 6 Disease Classes")
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(merged, use_container_width=True, hide_index=True)
 
@@ -475,13 +720,15 @@ elif page == "Model Comparison":
             cm = load_confusion_matrix(mdir)
             if not cm.empty:
                 with col:
-                    fig = px.imshow(cm, text_auto=True, color_continuous_scale=scale, title=title)
-                    fig.update_layout(height=420)
-                    st.plotly_chart(fig, use_container_width=True)
+                    with st.container(border=True):
+                        fig = px.imshow(cm, text_auto=True, color_continuous_scale=scale, title=title)
+                        fig.update_layout(height=420)
+                        st.plotly_chart(fig, use_container_width=True)
 
 
-elif page == "Disease Classes":
-    st.title("🌱 Rice Leaf Pathology Reference (6 Classes)")
+elif page == "🌱 Classes":
+    st.markdown("### 🌱 Rice Leaf Pathology Reference (6 Classes)")
+    st.caption("Representative specimens, visual symptoms, and agronomic management guidelines.")
     class_imgs = load_json(str(OUTPUTS_DIR / "class_images.json"))
     cols = st.columns(2)
     for i, cls in enumerate(CLASS_NAMES):
@@ -499,20 +746,22 @@ elif page == "Disease Classes":
                     st.markdown(f"**Management:** {info['management']}")
 
 
-elif page == "Methodology":
-    st.title("🧪 Research Pipeline & Methodology")
-    st.markdown(
-        """
-        1. **Dataset Collection:** 3,829 raw rice leaf images across 6 classes.
-        2. **Two-Stage Deduplication (`SHA-256` + `pHash`):**
-           - Excluded **31 exact duplicates** via SHA-256 → **3,798 unique canonical images**.
-           - Grouped **67 near-duplicate clusters** via pHash (`d <= 10`) into the same split.
-           - Stratified split: **75% Train (2,847)** / **10% Val (381)** / **15% Test (570)** with **0 leakage**.
-        3. **Two-Stage Fine-Tuning:**
-           - **Stage 1:** Freeze pretrained backbone, train classification head (`Adam`, `lr=1e-3`).
-           - **Stage 2:** Unfreeze full model with low LR (`AdamW`, `5e-5` for EfficientNetV2-S, `2e-5` for ViT-B/16), `ReduceLROnPlateau`, and `EarlyStopping`.
-        4. **Explainable AI (XAI):**
-           - **EfficientNetV2-S:** Pre-softmax **Grad-CAM++** (Chattopadhay et al., 2018).
-           - **ViT-B/16:** **14×14 Patch Attention Saliency** (`avg_pool2d` `16×16`, 99th percentile clipping).
-        """
-    )
+elif page == "🧪 Methodology":
+    st.markdown("### 🧪 Research Pipeline & Methodology")
+    st.caption("End-to-end leakage-free workflow from raw image collection to Explainable AI deployment.")
+
+    steps = [
+        ("1. Dataset Collection & Standardization", "3,829 raw rice leaf images collected across 6 pathological classes."),
+        ("2. Audit & Leakage-Free Splitting (SHA-256 + pHash)",
+         "Excluded **31 exact duplicates** via SHA-256 (3,798 unique canonical images preserved) and grouped **67 near-duplicate clusters** via pHash (`d ≤ 10`) into the same split: **75% Train (2,847)** / **10% Val (381)** / **15% Test (570)** with **0 hash overlap**."),
+        ("3. Two-Stage Fine-Tuning",
+         "**Stage 1:** Freeze ImageNet-pretrained backbone, train classification head (`Adam`, `lr=1e-3`).\n\n"
+         "**Stage 2:** Unfreeze full model with low learning rate (`AdamW`, `5e-5` for EfficientNetV2-S, `2e-5` for ViT-B/16), `ReduceLROnPlateau`, and `EarlyStopping`."),
+        ("4. Explainable AI (Grad-CAM++ & Attention Saliency)",
+         "**EfficientNetV2-S:** Pre-softmax **Grad-CAM++** (Chattopadhay et al., 2018).\n\n"
+         "**ViT-B/16:** **14×14 Patch Attention Saliency** (`avg_pool2d` `16×16`, 99th percentile clipping) blended at `α = 0.45`."),
+    ]
+    for title, body in steps:
+        with st.container(border=True):
+            st.subheader(title)
+            st.markdown(body)
