@@ -8,7 +8,9 @@ import csv
 import gc
 import io
 import json
+import os
 import time
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -283,8 +285,21 @@ def load_confusion_matrix(model_dir: str) -> pd.DataFrame:
 @st.cache_resource(show_spinner=False)
 def load_model_cached(model_key: str) -> Any:
     ckpt = EFFNET_CHECKPOINT if model_key == "efficientnetv2s" else VIT_CHECKPOINT
+    if not ckpt.exists() and model_key == "vit_base":
+        vit_url = os.environ.get("VIT_MODEL_URL")
+        if not vit_url:
+            try:
+                vit_url = st.secrets.get("VIT_MODEL_URL", None)
+            except Exception:
+                vit_url = None
+        if vit_url:
+            ckpt.parent.mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(vit_url, str(ckpt))
     if not ckpt.exists():
-        raise FileNotFoundError(f"Model checkpoint not found: {ckpt}")
+        raise FileNotFoundError(
+            f"Model checkpoint not found: {ckpt.name}. "
+            "Upload it to Hugging Face Hub and set VIT_MODEL_URL in Streamlit Secrets, or run EfficientNetV2-S Only."
+        )
     return tf.keras.models.load_model(str(ckpt), compile=False)
 
 
@@ -549,7 +564,12 @@ elif page == "🔬 Predict & XAI":
                 for mk in targets:
                     label = "EfficientNetV2-S" if mk == "efficientnetv2s" else "ViT-B/16"
                     with st.spinner(f"Running {label}..."):
-                        results[mk] = run_inference(pil_img, mk, alpha)
+                        try:
+                            results[mk] = run_inference(pil_img, mk, alpha)
+                        except FileNotFoundError as exc:
+                            st.warning(f"⚠️ **{label} unavailable on this host:** {exc}")
+                        except Exception as exc:
+                            st.error(f"❌ **{label} failed (likely RAM limit):** {exc}")
 
                 if len(results) == 2:
                     e_cls = results["efficientnetv2s"]["predicted_class"]
@@ -559,26 +579,27 @@ elif page == "🔬 Predict & XAI":
                     else:
                         st.warning(f"⚖️ **Divergence:** EfficientNetV2-S predicts **{e_cls}**, while ViT-B/16 predicts **{v_cls}**")
 
-                cols = st.columns(len(results))
-                for col, (mk, res) in zip(cols, results.items()):
-                    title = "EfficientNetV2-S (Grad-CAM++)" if mk == "efficientnetv2s" else "ViT-B/16 (Attention Saliency)"
-                    with col:
-                        with st.container(border=True):
-                            st.subheader(title)
-                            img_to_show = (
-                                res["overlay_img"] if view_mode == "Overlay"
-                                else (res["raw_hm_img"] if view_mode == "Raw Heatmap" else res["orig_img"])
-                            )
-                            st.image(img_to_show, use_container_width=True, caption=f"{res['xai_method']} • {res['inference_ms']} ms")
-                            st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
-                            score_df = pd.DataFrame({
-                                "Class": list(res["scores"].keys()),
-                                "Probability (%)": [v * 100 for v in res["scores"].values()],
-                            }).sort_values("Probability (%)", ascending=True)
-                            fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=230)
-                            fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
-                            st.plotly_chart(fig, use_container_width=True)
-                st.info(DISCLAIMER)
+                if results:
+                    cols = st.columns(len(results))
+                    for col, (mk, res) in zip(cols, results.items()):
+                        title = "EfficientNetV2-S (Grad-CAM++)" if mk == "efficientnetv2s" else "ViT-B/16 (Attention Saliency)"
+                        with col:
+                            with st.container(border=True):
+                                st.subheader(title)
+                                img_to_show = (
+                                    res["overlay_img"] if view_mode == "Overlay"
+                                    else (res["raw_hm_img"] if view_mode == "Raw Heatmap" else res["orig_img"])
+                                )
+                                st.image(img_to_show, use_container_width=True, caption=f"{res['xai_method']} • {res['inference_ms']} ms")
+                                st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                                score_df = pd.DataFrame({
+                                    "Class": list(res["scores"].keys()),
+                                    "Probability (%)": [v * 100 for v in res["scores"].values()],
+                                }).sort_values("Probability (%)", ascending=True)
+                                fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=230)
+                                fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
+                                st.plotly_chart(fig, use_container_width=True)
+                    st.info(DISCLAIMER)
 
     with tab_sample:
         samples = load_json(str(OUTPUTS_DIR / "sample_results.json"))
