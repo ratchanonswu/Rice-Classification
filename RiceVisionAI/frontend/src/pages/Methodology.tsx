@@ -48,14 +48,14 @@ const steps: Step[] = [
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>
-          An automated deduplication pipeline identified exact duplicate groups using SHA-256 cryptographic hashing.
-          Duplicate clusters were isolated so no identical leaf specimen could leak across train, validation,
-          and test splits.
+          An automated two-stage deduplication pipeline used SHA-256 cryptographic hashing and perceptual hashing (pHash).
+          Exact duplicates were removed and near-duplicate clusters were grouped into the same split so no identical
+          or visually similar leaf specimen could leak across train, validation, and test sets.
         </p>
         <ul className="space-y-1.5 list-disc list-inside text-xs text-slate-500">
-          <li>31 exact duplicate copies excluded; 3,798 unique canonical images preserved</li>
+          <li>31 exact duplicate copies excluded via SHA-256; 3,798 unique canonical images preserved</li>
+          <li>67 near-duplicate clusters grouped via pHash and locked to the same split</li>
           <li>Leakage-free stratified splitting: 75% train (2,847), 10% validation (381), 15% test (570)</li>
-          <li>All splits audited for class distribution balance and zero SHA-256 hash overlap</li>
         </ul>
       </div>
     ),
