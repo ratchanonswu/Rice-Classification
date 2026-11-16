@@ -6,16 +6,19 @@ alongside benchmark comparison, disease reference, and methodology documentation
 import base64
 import csv
 import gc
+import importlib
+import inspect
 import io
 import json
 import os
+import subprocess
+import sys
 import time
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import cv2
-import keras_hub  # noqa: F401 — required for ViT-B/16 custom layer deserialization
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -23,6 +26,38 @@ import plotly.graph_objects as go
 import streamlit as st
 import tensorflow as tf
 from PIL import Image
+
+# Ensure keras-hub >= 0.33.0 is installed (--no-deps bypasses tensorflow-text wheel missing on Linux cp314)
+import keras_hub  # noqa: E402
+if tuple(int(x) for x in keras_hub.__version__.split(".")[:2] if x.isdigit()) < (0, 30):
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--no-deps", "-q", "keras-hub==0.33.0"],
+        check=False,
+    )
+    importlib.reload(keras_hub)
+
+# Compatibility patch for ViTBackbone.from_config across keras-hub versions (patch_size list vs int)
+try:
+    from keras_hub.src.models.vit.vit_backbone import ViTBackbone
+    _orig_vit_from_config = ViTBackbone.from_config
+
+    @classmethod  # type: ignore[misc]
+    def _compat_vit_from_config(cls, config):
+        try:
+            return _orig_vit_from_config(config)
+        except TypeError:
+            cfg = dict(config)
+            if isinstance(cfg.get("patch_size"), (list, tuple)):
+                cfg["patch_size"] = cfg["patch_size"][0]
+            sig = inspect.signature(cls.__init__)
+            allowed = set(sig.parameters.keys())
+            if "kwargs" not in allowed:
+                cfg = {k: v for k, v in cfg.items() if k in allowed}
+            return cls(**cfg)
+
+    ViTBackbone.from_config = _compat_vit_from_config
+except Exception:
+    pass
 
 # ─── Page Config & Constants ──────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 streamlit>=1.38.0
-tensorflow>=2.19.0
-keras>=3.13.0
-keras-hub>=0.33.0
+tensorflow>=2.16.0
+keras>=3.10.0
+keras-hub>=0.17.0
 numpy>=1.26.0
 pandas>=2.2.0
 pillow>=10.0.0
