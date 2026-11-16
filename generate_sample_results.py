@@ -35,26 +35,27 @@ def _compute_gradcam_effnet(img_tensor, model, pred_index=None):
     img_tensor = tf.convert_to_tensor(img_tensor, dtype=tf.float32)
     backbone    = model.layers[1]
     head_layers = model.layers[2:]
-    with tf.GradientTape() as tape1:
-        with tf.GradientTape() as tape2:
-            with tf.GradientTape() as tape3:
-                features = backbone(img_tensor, training=False)
-                tape3.watch(features)
-                x = features
-                for layer in head_layers:
-                    x = layer(x, training=False)
-                if pred_index is None:
-                    pred_index = int(tf.argmax(x[0]))
-                score = x[:, pred_index]
-            first_grads  = tape3.gradient(score, features)
-            second_grads = tape2.gradient(first_grads, features)
-            third_grads  = tape1.gradient(second_grads, features)
-    alpha_num   = second_grads[0]
-    alpha_denom = 2.0 * second_grads[0] + third_grads[0] * features[0] + 1e-10
-    alphas      = tf.where(tf.math.is_nan(alpha_num / alpha_denom), tf.zeros_like(alpha_num), alpha_num / alpha_denom)
-    weights     = tf.reduce_sum(alphas * tf.maximum(first_grads[0], 0.0), axis=(0, 1))
-    cam         = tf.maximum(tf.reduce_sum(weights * features[0], axis=-1), 0.0)
-    mx          = tf.math.reduce_max(cam)
+    with tf.GradientTape() as tape:
+        features = backbone(img_tensor, training=False)
+        tape.watch(features)
+        x = features
+        for layer in head_layers[:-1]:
+            x = layer(x, training=False)
+        last_layer = head_layers[-1]
+        logits = tf.matmul(x, last_layer.kernel) + last_layer.bias
+        if pred_index is None:
+            pred_index = int(tf.argmax(logits[0]))
+        score = logits[:, pred_index]
+    grads           = tape.gradient(score, features)
+    grads_pos       = tf.maximum(grads[0], 0.0)
+    grads_pow2      = tf.square(grads_pos)
+    grads_pow3      = grads_pow2 * grads_pos
+    sum_activations = tf.reduce_sum(features[0], axis=(0, 1), keepdims=True)
+    alpha_denom     = 2.0 * grads_pow2 + sum_activations * grads_pow3 + 1e-10
+    alphas          = tf.where(grads[0] > 0.0, grads_pow2 / alpha_denom, 0.0)
+    weights         = tf.reduce_sum(alphas * grads_pos, axis=(0, 1))
+    cam             = tf.maximum(tf.reduce_sum(weights * features[0], axis=-1), 0.0)
+    mx              = tf.math.reduce_max(cam)
     return (cam / mx).numpy() if mx > 0 else cam.numpy()
 
 

@@ -118,43 +118,44 @@ def _load_model(name: str):
 
 def _compute_gradcam_heatmap(img_tensor: tf.Tensor, model: Any, pred_index: Optional[int] = None) -> np.ndarray:
     """
-    Computes a normalized Grad-CAM++ heatmap for an input image tensor (shape: 1, 224, 224, 3)
-    using 1st/2nd/3rd-order head-propagation derivatives for EfficientNetV2-S.
+    Computes a normalized Grad-CAM++ heatmap (Chattopadhay et al., 2018) for an input tensor
+    (shape: 1, 224, 224, 3) using pre-softmax logits via head-propagation for EfficientNetV2-S.
     """
     img_tensor = tf.convert_to_tensor(img_tensor, dtype=tf.float32)
     backbone = model.layers[1]
     head_layers = model.layers[2:]
 
-    with tf.GradientTape() as tape1:
-        with tf.GradientTape() as tape2:
-            with tf.GradientTape() as tape3:
-                features = backbone(img_tensor, training=False)
-                tape3.watch(features)
+    with tf.GradientTape() as tape:
+        features = backbone(img_tensor, training=False)
+        tape.watch(features)
 
-                x = features
-                for layer in head_layers:
-                    x = layer(x, training=False)
-                preds = x
+        x = features
+        for layer in head_layers[:-1]:
+            x = layer(x, training=False)
+        last_layer = head_layers[-1]
+        if hasattr(last_layer, "kernel") and hasattr(last_layer, "bias"):
+            logits = tf.matmul(x, last_layer.kernel) + last_layer.bias
+        else:
+            logits = last_layer(x, training=False)
 
-                if pred_index is None:
-                    pred_index = int(tf.argmax(preds[0]))
-                score = preds[:, pred_index]
+        if pred_index is None:
+            pred_index = int(tf.argmax(logits[0]))
+        score = logits[:, pred_index]
 
-            first_grads = tape3.gradient(score, features)
-            second_grads = tape2.gradient(first_grads, features)
-            third_grads = tape1.gradient(second_grads, features)
-
-    if first_grads is None or second_grads is None or third_grads is None:
+    grads = tape.gradient(score, features)
+    if grads is None:
         raise ValueError("Gradients could not be computed for Grad-CAM++.")
 
-    alpha_num = second_grads[0]
-    alpha_denom = 2.0 * second_grads[0] + third_grads[0] * features[0] + 1e-10
-    alphas = alpha_num / alpha_denom
-    alphas = tf.where(tf.math.is_nan(alphas), tf.zeros_like(alphas), alphas)
+    # Chattopadhay et al. (2018) closed-form Grad-CAM++ pixel-wise alpha weighting
+    grads_pos = tf.maximum(grads[0], 0.0)
+    grads_pow2 = tf.square(grads_pos)
+    grads_pow3 = grads_pow2 * grads_pos
+    sum_activations = tf.reduce_sum(features[0], axis=(0, 1), keepdims=True)
+    alpha_denom = 2.0 * grads_pow2 + sum_activations * grads_pow3 + 1e-10
+    alphas = tf.where(grads[0] > 0.0, grads_pow2 / alpha_denom, 0.0)
 
-    weights = tf.reduce_sum(alphas * tf.maximum(first_grads[0], 0.0), axis=(0, 1))
-    cam = tf.reduce_sum(weights * features[0], axis=-1)
-    cam = tf.maximum(cam, 0.0)
+    weights = tf.reduce_sum(alphas * grads_pos, axis=(0, 1))
+    cam = tf.maximum(tf.reduce_sum(weights * features[0], axis=-1), 0.0)
     max_val = tf.math.reduce_max(cam)
     if max_val > 0:
         cam = cam / max_val
