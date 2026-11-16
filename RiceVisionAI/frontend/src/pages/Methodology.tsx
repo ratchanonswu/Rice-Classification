@@ -80,7 +80,7 @@ const steps: Step[] = [
               <li>• <strong>83.04 MB</strong> model checkpoint</li>
               <li>• Fused-MBConv layers with progressive learning</li>
               <li>• Native Keras internal normalization layers</li>
-              <li>• GlobalAveragePooling2D → Dense(6) Softmax</li>
+              <li>• <strong>GlobalAveragePooling2D</strong> (7×7×1280 → 1280-d) → Dense(256, ReLU) → Dropout(0.3) → Dense(6, Softmax)</li>
             </ul>
           </div>
           <div className="bg-purple-50/50 border border-purple-200 rounded-2xl p-4 space-y-2">
@@ -90,9 +90,25 @@ const steps: Step[] = [
               <li>• <strong>982.5 MB</strong> model checkpoint</li>
               <li>• 12 Transformer layers, 12 attention heads, 768-dim</li>
               <li>• 16×16 non-overlapping patch embeddings (196 tokens)</li>
-              <li>• Global self-attention eliminating background shortcut bias</li>
+              <li>• <strong>CLS Token Pooling</strong> (197×768 → 768-d) → Dropout(0.1) → Dense(6, Softmax)</li>
             </ul>
           </div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2 text-slate-600">
+          <p className="font-semibold text-slate-800">Pooling Layer Flow Across Architectures &amp; XAI</p>
+          <p>
+            <strong>1. CNN Spatial Pooling (GlobalAveragePooling2D):</strong> Collapses the 7×7×1280 backbone feature maps
+            into a 1280-d vector by averaging each channel across space instead of <code>Flatten()</code>, reducing
+            overfitting and enabling direct channel-weight attribution for Grad-CAM++.
+          </p>
+          <p>
+            <strong>2. Transformer Token Pooling (CLS Token):</strong> Summarizes global self-attention across all 196 leaf
+            patches into the learned <code>[CLS]</code> token (768-d) prior to classification.
+          </p>
+          <p>
+            <strong>3. XAI Patch Pooling (avg_pool2d 16×16):</strong> Aggregates 224×224 pixel input gradients via{' '}
+            <code>tf.nn.avg_pool2d(ksize=16, strides=16)</code> into a 14×14 patch saliency grid.
+          </p>
         </div>
       </div>
     ),
