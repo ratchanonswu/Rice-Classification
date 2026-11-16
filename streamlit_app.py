@@ -39,6 +39,7 @@ OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
 EFFNET_CHECKPOINT = MODELS_DIR / "efficientnetv2s.keras"
 VIT_CHECKPOINT = MODELS_DIR / "vit_base.keras"
+DEFAULT_VIT_MODEL_URL = "https://huggingface.co/ratchanonswu/ViT-B_16/resolve/main/vit_base.keras"
 
 CLASS_NAMES = [
     "Bacterial Leaf Blight",
@@ -292,9 +293,9 @@ def load_model_cached(model_key: str) -> Any:
                 vit_url = st.secrets.get("VIT_MODEL_URL", None)
             except Exception:
                 vit_url = None
-        if vit_url:
-            ckpt.parent.mkdir(parents=True, exist_ok=True)
-            urllib.request.urlretrieve(vit_url, str(ckpt))
+        vit_url = (vit_url or DEFAULT_VIT_MODEL_URL).replace("/blob/", "/resolve/")
+        ckpt.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(vit_url, str(ckpt))
     if not ckpt.exists():
         raise FileNotFoundError(
             f"Model checkpoint not found: {ckpt.name}. "
