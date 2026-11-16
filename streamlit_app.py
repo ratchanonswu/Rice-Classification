@@ -274,26 +274,110 @@ st.markdown(
     .rv-brand {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.7rem;
     }
     .rv-brand-title {
-        font-family: 'Newsreader', 'IBM Plex Sans Thai', Georgia, serif;
-        font-size: 1.55rem;
-        line-height: 1.05;
+        font-family: 'Source Sans 3', 'IBM Plex Sans Thai', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.15;
         color: var(--ink-primary);
         letter-spacing: -0.02em;
     }
     .rv-brand-sub {
-        font-size: 0.76rem;
-        color: var(--ink-secondary);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        color: var(--ink-muted);
+        margin-top: 0.1rem;
     }
 
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        background: var(--bg-surface);
-        padding: 0.3rem 0.45rem;
-        border-radius: 10px;
+    /* Modern Minimal Left Sidebar Navigation (No radio circles, full-width pills) */
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        padding-top: 1.25rem !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        gap: 0.22rem !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.55rem 0.85rem !important;
+        border-radius: 9px !important;
+        background: transparent !important;
+        transition: background-color 140ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child {
+        display: none !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:hover {
+        background: #F1EFE9 !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"] p {
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        color: var(--ink-secondary) !important;
+        margin: 0 !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {
+        background: #14261C !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) p {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
+
+    /* Horizontal Language Segmented Bar in Sidebar */
+    section[data-testid="stSidebar"] div[role="radiogroup"][aria-orientation="horizontal"] {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        background: #F1EFE9 !important;
+        padding: 0.22rem !important;
+        border-radius: 9px !important;
+        gap: 0.2rem !important;
+        margin-bottom: 0.65rem !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"][aria-orientation="horizontal"] label[data-baseweb="radio"] {
+        justify-content: center !important;
+        padding: 0.32rem 0.5rem !important;
+        border-radius: 7px !important;
+        text-align: center !important;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"][aria-orientation="horizontal"] label[data-baseweb="radio"] p {
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Minimal Status Card in Sidebar */
+    .rv-status-box {
+        background: #F7F6F2;
         border: 1px solid var(--rule-hairline);
-        gap: 0.35rem;
+        border-radius: 10px;
+        padding: 0.75rem 0.85rem;
+        margin-bottom: 0.65rem;
+    }
+    .rv-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.78rem;
+        padding: 0.22rem 0;
+        color: var(--ink-secondary);
+    }
+    .rv-status-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #1B5E3A;
+        margin-right: 0.45rem;
+    }
+    .rv-status-meta {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        color: var(--ink-muted);
     }
 
     .rv-lead-box {
@@ -622,29 +706,30 @@ def style_plotly(fig: go.Figure, height: int = 240) -> go.Figure:
 
 with st.sidebar:
     st.markdown(
-        f'<div class="rv-brand" style="padding:0.25rem 0 0.9rem 0;border-bottom:1px solid #DDD9D0;margin-bottom:0.85rem;">'
+        f'<div class="rv-brand" style="padding:0.15rem 0 0.85rem 0;">'
         f'{LEAF_MARK_SVG}'
         f'<div><div class="rv-brand-title">RiceVision AI</div>'
-        f'<div class="rv-brand-sub">EfficientNetV2-S &amp; ViT-B/16</div></div>'
+        f'<div class="rv-brand-sub">EffNetV2-S · ViT-B/16</div></div>'
         f'</div>',
         unsafe_allow_html=True,
     )
 
     lang_choice = st.radio(
-        "Language / ภาษา",
-        ["TH — ภาษาไทย", "EN — English"],
+        "Language",
+        ["ภาษาไทย", "English"],
         index=0,
         horizontal=True,
+        label_visibility="collapsed",
     )
-    is_th = lang_choice.startswith("TH")
+    is_th = lang_choice == "ภาษาไทย"
 
     nav_keys = ["overview", "bench", "benchmark", "atlas", "methodology"]
     nav_labels = {
-        "overview": "ภาพรวมโครงการ (Overview)" if is_th else "Overview",
-        "bench": "วิเคราะห์และทำนายโรค (Diagnostic Bench)" if is_th else "Diagnostic Bench",
-        "benchmark": "เปรียบเทียบโมเดล (Benchmark)" if is_th else "Benchmark",
-        "atlas": "ฐานข้อมูลโรคใบข้าว 6 ชนิด (Pathology Atlas)" if is_th else "Pathology Atlas",
-        "methodology": "กระบวนการวิจัย (Methodology)" if is_th else "Methodology",
+        "overview": "ภาพรวมโครงการ" if is_th else "Overview",
+        "bench": "วิเคราะห์และทำนายโรค" if is_th else "Diagnostic Bench",
+        "benchmark": "เปรียบเทียบประสิทธิภาพ" if is_th else "Model Benchmark",
+        "atlas": "ข้อมูลโรคใบข้าว 6 ชนิด" if is_th else "Pathology Atlas",
+        "methodology": "กระบวนการวิจัย" if is_th else "Methodology",
     }
     page_key = st.radio(
         "Navigation",
@@ -654,15 +739,29 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    st.markdown('<hr style="border:none;border-top:1px solid #DDD9D0;margin:1.1rem 0;"/>', unsafe_allow_html=True)
-    st.markdown("**สถานะโมเดล (Runtime Checkpoints)**" if is_th else "**Runtime Checkpoints**")
-    st.caption(f"EfficientNetV2-S (83.0 MB): {'พร้อมใช้งาน' if (EFFNET_CHECKPOINT.exists() and is_th) else ('Ready' if EFFNET_CHECKPOINT.exists() else 'Missing')}")
-    st.caption(f"ViT-B/16 (982.5 MB): {'พร้อมใช้งาน' if (VIT_CHECKPOINT.exists() and is_th) else ('Ready' if VIT_CHECKPOINT.exists() else 'HF Hub Auto-Load')}")
-    if st.button("ล้างแคชโมเดลใน RAM" if is_th else "Release Cached Models from RAM", use_container_width=True):
+    st.markdown('<div style="height:1.25rem;"></div>', unsafe_allow_html=True)
+    eff_status = ("พร้อมใช้งาน" if is_th else "Ready") if EFFNET_CHECKPOINT.exists() else "Missing"
+    vit_status = ("พร้อมใช้งาน" if is_th else "Ready") if VIT_CHECKPOINT.exists() else ("โหลดอัตโนมัติ" if is_th else "HF Cloud")
+    st.markdown(
+        f"""
+        <div class="rv-status-box">
+            <div class="rv-status-row">
+                <span><span class="rv-status-dot"></span>EfficientNetV2-S</span>
+                <span class="rv-status-meta">83 MB · {eff_status}</span>
+            </div>
+            <div class="rv-status-row">
+                <span><span class="rv-status-dot"></span>ViT-B/16</span>
+                <span class="rv-status-meta">983 MB · {vit_status}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("ล้างแคช RAM" if is_th else "Clear RAM Cache", use_container_width=True):
         load_model_cached.clear()
         tf.keras.backend.clear_session()
         gc.collect()
-        st.success("ล้างแคชโมเดลออกจากหน่วยความจำแล้ว" if is_th else "Cleared model weights from memory.")
+        st.success("ล้างแคชโมเดลแล้ว" if is_th else "Cleared model cache.")
 
 
 DISCLAIMER_TEXT = (
