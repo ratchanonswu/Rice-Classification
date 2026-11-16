@@ -969,6 +969,13 @@ elif page == "Methodology":
          "Stage 1 removed **31 exact duplicate files** via SHA-256 cryptographic hashing, preserving **3,798 unique canonical images**. "
          "Stage 2 computed 64-bit DCT perceptual hashes (`pHash`, Hamming distance ≤ 10) to isolate **67 near-duplicate clusters** "
          "(burst shots and pre-augmented variants) into identical splits: **75% Train (2,847)**, **10% Validation (381)**, and **15% Test (570)**."),
+        ("Pooling Layer & Classification Head Flow",
+         "**EfficientNetV2-S (Spatial Global Average Pooling):**\n"
+         "`Input (224×224×3)` → `Fused-MBConv Backbone (7×7×1280 Feature Map)` → **`GlobalAveragePooling2D (1280-d)`** → `Dense(256, ReLU)` → `Dropout(0.3)` → `Dense(6, Softmax)`. "
+         "Collapses each 7×7 spatial channel into its mean activation rather than using `Flatten()`, preventing parameter bloat and preserving channel attribution for Grad-CAM++.\n\n"
+         "**ViT-B/16 (CLS Token Pooling & 16×16 Saliency Average Pooling):**\n"
+         "`Input (224×224×3)` → `16×16 Patch Projection (196 Patch Tokens + 1 [CLS] Token)` → `12× Transformer Encoder` → **`Token Pooling ([CLS] 768-d)`** → `Dropout(0.1)` → `Dense(6, Softmax)`. "
+         "During XAI attribution, pixel-level gradients (`224×224`) are downsampled via **`tf.nn.avg_pool2d (ksize=16, strides=16)`** into a **14×14 patch grid** aligned with the transformer's native token geometry."),
         ("Two-Stage Transfer Learning & Fine-Tuning",
          "**Stage 1 (Head Adaptation):** ImageNet-pretrained backbones frozen (`trainable = False`); classification head trained with `Adam (lr = 1e-3)` and `EarlyStopping (patience = 3)`.\n\n"
          "**Stage 2 (Full Fine-Tuning):** Full network unfrozen with `AdamW (weight_decay = 0.05)` at low learning rates (`5e-5` for EfficientNetV2-S, `2e-5` for ViT-B/16), governed by `ReduceLROnPlateau` and `EarlyStopping`."),
