@@ -118,44 +118,47 @@ def _load_model(name: str):
 
 def _compute_gradcam_heatmap(img_tensor: tf.Tensor, model: Any, pred_index: Optional[int] = None) -> np.ndarray:
     """
-    Computes a normalized Grad-CAM heatmap for an input image tensor (shape: 1, 224, 224, 3)
-    using head-propagation through the classification layers for EfficientNetV2-S.
+    Computes a normalized Grad-CAM++ heatmap for an input image tensor (shape: 1, 224, 224, 3)
+    using 1st/2nd/3rd-order head-propagation derivatives for EfficientNetV2-S.
     """
+    img_tensor = tf.convert_to_tensor(img_tensor, dtype=tf.float32)
     backbone = model.layers[1]
     head_layers = model.layers[2:]
 
-    with tf.GradientTape() as tape:
-        features = backbone(img_tensor, training=False)
-        tape.watch(features)
+    with tf.GradientTape() as tape1:
+        with tf.GradientTape() as tape2:
+            with tf.GradientTape() as tape3:
+                features = backbone(img_tensor, training=False)
+                tape3.watch(features)
 
-        # Forward pass through classification head
-        x = features
-        for layer in head_layers:
-            x = layer(x, training=False)
-        preds = x
+                x = features
+                for layer in head_layers:
+                    x = layer(x, training=False)
+                preds = x
 
-        if pred_index is None:
-            pred_index = int(tf.argmax(preds[0]))
-        loss = preds[:, pred_index]
+                if pred_index is None:
+                    pred_index = int(tf.argmax(preds[0]))
+                score = preds[:, pred_index]
 
-    grads = tape.gradient(loss, features)
-    if grads is None:
-        raise ValueError("Gradients could not be computed for Grad-CAM.")
+            first_grads = tape3.gradient(score, features)
+            second_grads = tape2.gradient(first_grads, features)
+            third_grads = tape1.gradient(second_grads, features)
 
-    # Global average pooling of gradients gives channel importance weights
-    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    if first_grads is None or second_grads is None or third_grads is None:
+        raise ValueError("Gradients could not be computed for Grad-CAM++.")
 
-    # Weight features by channel importance
-    features_val = features[0]
-    heatmap = features_val @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
+    alpha_num = second_grads[0]
+    alpha_denom = 2.0 * second_grads[0] + third_grads[0] * features[0] + 1e-10
+    alphas = alpha_num / alpha_denom
+    alphas = tf.where(tf.math.is_nan(alphas), tf.zeros_like(alphas), alphas)
 
-    # ReLU and normalize between 0 and 1
-    heatmap = tf.maximum(heatmap, 0.0)
-    max_val = tf.math.reduce_max(heatmap)
+    weights = tf.reduce_sum(alphas * tf.maximum(first_grads[0], 0.0), axis=(0, 1))
+    cam = tf.reduce_sum(weights * features[0], axis=-1)
+    cam = tf.maximum(cam, 0.0)
+    max_val = tf.math.reduce_max(cam)
     if max_val > 0:
-        heatmap = heatmap / max_val
-    return heatmap.numpy()
+        cam = cam / max_val
+    return cam.numpy()
 
 
 def _compute_vit_saliency_heatmap(img_tensor: tf.Tensor, vit_model: Any) -> np.ndarray:

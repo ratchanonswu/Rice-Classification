@@ -29,27 +29,33 @@ DISCLAIMER = (
 )
 
 
-# ─── Grad-CAM (for EfficientNetV2-S) ──────────────────────────────────────────
+# ─── Grad-CAM++ (for EfficientNetV2-S) ────────────────────────────────────────
 
 def _compute_gradcam_effnet(img_tensor, model, pred_index=None):
+    img_tensor = tf.convert_to_tensor(img_tensor, dtype=tf.float32)
     backbone    = model.layers[1]
     head_layers = model.layers[2:]
-    with tf.GradientTape() as tape:
-        features = backbone(img_tensor, training=False)
-        tape.watch(features)
-        x = features
-        for layer in head_layers:
-            x = layer(x, training=False)
-        if pred_index is None:
-            pred_index = int(tf.argmax(x[0]))
-        loss = x[:, pred_index]
-    grads       = tape.gradient(loss, features)
-    pooled      = tf.reduce_mean(grads, axis=(0, 1, 2))
-    heatmap     = features[0] @ pooled[..., tf.newaxis]
-    heatmap     = tf.squeeze(heatmap)
-    heatmap     = tf.maximum(heatmap, 0.0)
-    mx          = tf.math.reduce_max(heatmap)
-    return (heatmap / mx).numpy() if mx > 0 else heatmap.numpy()
+    with tf.GradientTape() as tape1:
+        with tf.GradientTape() as tape2:
+            with tf.GradientTape() as tape3:
+                features = backbone(img_tensor, training=False)
+                tape3.watch(features)
+                x = features
+                for layer in head_layers:
+                    x = layer(x, training=False)
+                if pred_index is None:
+                    pred_index = int(tf.argmax(x[0]))
+                score = x[:, pred_index]
+            first_grads  = tape3.gradient(score, features)
+            second_grads = tape2.gradient(first_grads, features)
+            third_grads  = tape1.gradient(second_grads, features)
+    alpha_num   = second_grads[0]
+    alpha_denom = 2.0 * second_grads[0] + third_grads[0] * features[0] + 1e-10
+    alphas      = tf.where(tf.math.is_nan(alpha_num / alpha_denom), tf.zeros_like(alpha_num), alpha_num / alpha_denom)
+    weights     = tf.reduce_sum(alphas * tf.maximum(first_grads[0], 0.0), axis=(0, 1))
+    cam         = tf.maximum(tf.reduce_sum(weights * features[0], axis=-1), 0.0)
+    mx          = tf.math.reduce_max(cam)
+    return (cam / mx).numpy() if mx > 0 else cam.numpy()
 
 
 # ─── ViT Attention Saliency (for ViT-B/16) ────────────────────────────────────
