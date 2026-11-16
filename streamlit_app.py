@@ -64,7 +64,7 @@ except Exception:
 st.set_page_config(
     page_title="RiceVision AI — Phytopathology Benchmark & XAI Bench",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -193,9 +193,9 @@ st.markdown(
     }
 
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 3.75rem !important;
         padding-bottom: 3.5rem;
-        max-width: 1260px;
+        max-width: 1180px;
     }
 
     header[data-testid="stHeader"] {
@@ -203,7 +203,15 @@ st.markdown(
         backdrop-filter: blur(8px);
         border-bottom: 1px solid var(--rule-hairline);
     }
-    #MainMenu, footer {visibility: hidden;}
+    #MainMenu, footer, [data-testid="stHeaderActionElements"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: var(--bg-surface) !important;
+        border-right: 1px solid var(--rule-hairline) !important;
+    }
 
     h1, h2, h3, .rv-serif {
         font-family: 'Newsreader', Georgia, serif !important;
@@ -579,41 +587,32 @@ def style_plotly(fig: go.Figure, height: int = 240) -> go.Figure:
     return fig
 
 
-# ─── Sidebar (Runtime Memory Control) ─────────────────────────────────────────
+# ─── Left Sidebar Navigation & Runtime Control ────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### Runtime Checkpoints")
-    st.write(f"EfficientNetV2-S (83.0 MB): {'Ready' if EFFNET_CHECKPOINT.exists() else 'Missing'}")
-    st.write(f"ViT-B/16 (982.5 MB): {'Ready' if VIT_CHECKPOINT.exists() else 'Remote HF Hub'}")
+    st.markdown(
+        f'<div class="rv-brand" style="padding:0.25rem 0 1rem 0;border-bottom:1px solid #DDD9D0;margin-bottom:1rem;">'
+        f'{LEAF_MARK_SVG}'
+        f'<div><div class="rv-brand-title">RiceVision AI</div>'
+        f'<div class="rv-brand-sub">EfficientNetV2-S &amp; ViT-B/16</div></div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    page = st.radio(
+        "Navigation",
+        ["Overview", "Diagnostic Bench", "Benchmark", "Pathology Atlas", "Methodology"],
+        index=0,
+        label_visibility="collapsed",
+    )
+    st.markdown('<hr style="border:none;border-top:1px solid #DDD9D0;margin:1.25rem 0;"/>', unsafe_allow_html=True)
+    st.markdown("**Runtime Checkpoints**")
+    st.caption(f"EfficientNetV2-S (83.0 MB): {'Ready' if EFFNET_CHECKPOINT.exists() else 'Missing'}")
+    st.caption(f"ViT-B/16 (982.5 MB): {'Ready' if VIT_CHECKPOINT.exists() else 'Remote HF Hub'}")
     if st.button("Release Cached Models from RAM", use_container_width=True):
         load_model_cached.clear()
         tf.keras.backend.clear_session()
         gc.collect()
         st.success("Cleared model weights from memory.")
-
-
-# ─── Masthead & Top Navigation ────────────────────────────────────────────────
-
-nav_col1, nav_col2 = st.columns([1.35, 3.65])
-with nav_col1:
-    st.markdown(
-        f'<div class="rv-brand" style="padding-top:0.2rem;">'
-        f'{LEAF_MARK_SVG}'
-        f'<div><div class="rv-brand-title">RiceVision AI</div>'
-        f'<div class="rv-brand-sub">EfficientNetV2-S &amp; ViT-B/16 Phytopathology Bench</div></div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-with nav_col2:
-    page = st.radio(
-        "Section",
-        ["Overview", "Benchmark", "Pathology Atlas", "Diagnostic Bench", "Methodology"],
-        index=3,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-
-st.markdown('<hr style="border:none;border-top:1px solid #DDD9D0;margin:0.5rem 0 1.5rem 0;"/>', unsafe_allow_html=True)
 
 
 # ─── Pages ────────────────────────────────────────────────────────────────────
