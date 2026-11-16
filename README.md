@@ -45,7 +45,7 @@ The dataset covers six critical rice foliage pathology categories:
 To ensure model predictions rely on clinically valid pathological features rather than background artifacts (shortcut learning), both architectures are instrumented with visual attribution:
 
 - **EfficientNetV2-S (Grad-CAM++):**
-  - Across both the Colab research notebook (`compute_gradcam_plusplus`) and the real-time FastAPI backend (`_compute_gradcam_heatmap`) / pre-computed sample generator, higher-order derivatives (1st, 2nd, and 3rd-order gradients via 3 nested `tf.GradientTape`s) weight feature maps through head-propagation to isolate sharp, multi-lesion borders.
+  - Across both the Colab research notebook (`compute_gradcam_plusplus`), the real-time FastAPI backend (`_compute_gradcam_heatmap`), and the pre-computed sample generator, Grad-CAM++ (Chattopadhay et al., 2018) uses pre-softmax logits with 2nd/3rd-order gradient power weighting to isolate sharp, multi-lesion borders without softmax saturation artifacts.
 - **ViT-B/16 (14×14 Patch Attention Saliency):**
   - Because KerasHub `ViTImageClassifier` splits `224×224` images into `16×16` patches (`14×14 = 196` tokens) and pools via a 1D CLS token, `_compute_vit_saliency_heatmap` computes input-gradient saliency ($|\partial \text{score} / \partial x|$), average-pools into a `14×14` patch grid (`ksize=16, strides=16`), and clips outliers at the **99th percentile**.
 - **Interactive Superimposition:** Normalized heatmaps are colored using OpenCV's `COLORMAP_JET` and blended with the original leaf image ($\alpha = 0.45$) as Base64 Data URLs for zero-latency browser rendering.
