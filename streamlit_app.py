@@ -377,20 +377,54 @@ elif page == "Live Prediction & XAI":
 
     with tab_sample:
         samples = load_json(str(OUTPUTS_DIR / "sample_results.json"))
+        class_imgs = load_json(str(OUTPUTS_DIR / "class_images.json"))
         if not samples:
             st.warning("`outputs/sample_results.json` not found.")
         else:
-            chosen = st.selectbox("Select Pre-Computed Test Sample", list(samples.keys()))
+            scol1, scol2 = st.columns([2, 1])
+            with scol1:
+                chosen = st.selectbox("Select Pre-Computed Test Sample", list(samples.keys()))
+            with scol2:
+                sample_hm_view = st.radio("Gallery Heatmap View", ["Overlay", "Raw Heatmap"], horizontal=True)
+
             item = samples[chosen]
+            eff = item["efficientnetv2s"]
+            vit = item["vit_base"]
+            hm_key = "gradcam_overlay" if sample_hm_view == "Overlay" else "gradcam_raw"
+
+            if eff["predicted_class"] == vit["predicted_class"]:
+                st.success(f"🤝 **Model Consensus:** Both models predict **{vit['predicted_class']}** (True Class: **{chosen}**)")
+            else:
+                st.warning(f"⚖️ **Divergence:** EfficientNetV2-S predicts **{eff['predicted_class']}**, ViT-B/16 predicts **{vit['predicted_class']}** (True Class: **{chosen}**)")
+
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.image(b64_to_pil(item["original_image"]), caption=f"Original ({chosen})", use_container_width=True)
-            with c2:
-                eff = item["efficientnetv2s"]
-                st.image(b64_to_pil(eff["gradcam_overlay"]), caption=f"EfficientNetV2-S: {eff['predicted_class']} ({eff['confidence']*100:.2f}%)", use_container_width=True)
-            with c3:
-                vit = item["vit_base"]
-                st.image(b64_to_pil(vit["gradcam_overlay"]), caption=f"ViT-B/16: {vit['predicted_class']} ({vit['confidence']*100:.2f}%)", use_container_width=True)
+                st.subheader("Original Leaf")
+                orig_b64 = item.get("original_image") or class_imgs.get(chosen)
+                if orig_b64:
+                    st.image(b64_to_pil(orig_b64), caption=f"True Class: {chosen}", use_container_width=True)
+                else:
+                    st.info("Original thumbnail unavailable.")
+
+            for col, (res, title, xai_label) in zip([c2, c3], [
+                (eff, "EfficientNetV2-S", "Grad-CAM++"),
+                (vit, "ViT-B/16 (Transformer)", "Attention Saliency (14×14)"),
+            ]):
+                with col:
+                    st.subheader(title)
+                    st.image(
+                        b64_to_pil(res[hm_key]),
+                        caption=f"{xai_label} • {res['inference_ms']} ms",
+                        use_container_width=True,
+                    )
+                    st.metric("Predicted Class", res["predicted_class"], f"{res['confidence']*100:.2f}% confidence")
+                    score_df = pd.DataFrame({
+                        "Class": list(res["scores"].keys()),
+                        "Probability (%)": [v * 100 for v in res["scores"].values()],
+                    }).sort_values("Probability (%)", ascending=True)
+                    fig = px.bar(score_df, x="Probability (%)", y="Class", orientation="h", height=220)
+                    fig.update_layout(margin=dict(l=0, r=10, t=10, b=0), xaxis_range=[0, 100])
+                    st.plotly_chart(fig, use_container_width=True)
 
 
 elif page == "Model Comparison":
